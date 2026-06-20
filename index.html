@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Fagotti · Gestione Turni</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Bricolage Grotesque',sans-serif;background:#fafaf8;color:#111827;min-height:100vh}
+/* LOGIN */
+#login{position:fixed;inset:0;background:#111827;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;z-index:9999}
+#login.hidden{display:none}
+.l-sub{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:#9ca3af;text-transform:uppercase}
+.l-title{font-size:28px;font-weight:800;color:#fff}
+.l-input{width:100%;max-width:280px;padding:13px 18px;background:#1f2937;border:1px solid #374151;color:#fff;border-radius:12px;font-size:16px;text-align:center;outline:none;font-family:'DM Mono',monospace}
+.l-btn{width:100%;max-width:280px;padding:14px;background:#fff;color:#111827;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+.l-err{color:#f87171;font-family:'DM Mono',monospace;font-size:12px;min-height:16px}
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.on{display:flex}
+.header{background:#fff;border-bottom:2px solid #111827;padding:14px 16px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:22px;font-weight:800;color:#111827;margin:0}
+.header-sub{font-family:'DM Mono',monospace;font-size:8px;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px}
+.sync{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px}
+.nav{display:flex;gap:8px;padding:12px 16px;background:#fff;border-bottom:1px solid #f3f4f6;position:sticky;top:57px;z-index:9}
+.nav-btn{padding:8px 16px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;font-family:'Bricolage Grotesque',sans-serif;transition:all .18s}
+.nav-btn.active{background:#111827;color:#fff}
+.nav-btn.inactive{background:#f3f4f6;color:#6b7280}
+.content{padding:16px;max-width:900px;margin:0 auto}
+/* MESE NAV */
+.mes-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.btn-mes{background:#111827;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:700;font-family:'Bricolage Grotesque',sans-serif;font-size:13px}
+.mes-title{font-weight:700;font-size:16px;color:#111827;text-transform:capitalize}
+/* SETTIMANA */
+.settimana{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px;margin-bottom:14px;overflow-x:auto}
+.set-header{font-weight:700;color:#111827;margin-bottom:10px;font-size:13px;font-family:'DM Mono',monospace}
+.turni-grid{display:grid;grid-template-columns:130px repeat(7,1fr) 56px;gap:4px;min-width:700px}
+.th-cell{text-align:center;font-size:10px;font-weight:700;color:#6b7280;padding:4px 2px;font-family:'DM Mono',monospace}
+.th-cell.festa{background:#f5e8d0;border-radius:6px;color:#8a6d3b}
+.nome-cell{font-size:11px;font-weight:700;color:#111827;display:flex;flex-direction:column;justify-content:center;padding:2px 4px}
+.ruolo-cell{font-size:9px;color:#9ca3af;font-weight:400;font-family:'DM Mono',monospace}
+.g-cell{border-radius:6px;padding:6px 2px;text-align:center;font-size:9px;font-weight:700;cursor:pointer;border:1px solid transparent;min-height:34px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;line-height:1.2}
+.g-x{background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb}
+.g-mat{background:#dcfce7;color:#166534}
+.g-pom{background:#fecaca;color:#991b1b}
+.g-gel{background:#bfdbfe;color:#1e40af}
+.g-fer{background:#fce7f3;color:#9d174d}
+.g-per{background:#dbeafe;color:#1d4ed8}
+.g-festa{background:#f5e8d0;color:#8a6d3b}
+.ore-cell{background:#f3f4f6;color:#6b7280;border-radius:6px;padding:6px 2px;text-align:center;font-size:10px;font-weight:800;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:center}
+.ore-ok{background:#dcfce7;color:#166534}
+.ore-over{background:#fecaca;color:#991b1b}
+/* FERIE */
+.ferie-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:16px;margin-bottom:10px}
+.ferie-nome{font-size:15px;font-weight:800;color:#111827;margin-bottom:4px}
+.ferie-ruolo{font-size:10px;font-family:'DM Mono',monospace;color:#9ca3af;margin-bottom:12px}
+.ferie-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ferie-block{background:#f9fafb;border-radius:8px;padding:10px}
+.ferie-block-title{font-family:'DM Mono',monospace;font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.ferie-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px}
+.ferie-label{color:#6b7280}
+.ferie-input{width:64px;border:1.5px solid #e5e7eb;border-radius:6px;padding:4px 6px;font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none}
+.ferie-residuo{font-size:18px;font-weight:800;color:#111827;margin-top:6px}
+.ferie-residuo.ok{color:#166534}
+.ferie-residuo.warn{color:#d97706}
+.ferie-residuo.neg{color:#dc2626}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:800;margin-bottom:14px;color:#111827}
+.modal-label{font-family:'DM Mono',monospace;font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:block}
+.modal-input{width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px;font-family:'DM Mono',monospace;font-size:13px;margin-bottom:10px;outline:none;color:#111827}
+.modal-input:focus{border-color:#111827}
+.quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.quick-btn{padding:10px 6px;border-radius:8px;border:2px solid transparent;font-weight:700;cursor:pointer;font-size:12px;font-family:'Bricolage Grotesque',sans-serif}
+.q-mat{background:#dcfce7;color:#166534;border-color:#dcfce7}
+.q-pom{background:#fecaca;color:#991b1b;border-color:#fecaca}
+.q-gel{background:#bfdbfe;color:#1e40af;border-color:#bfdbfe;grid-column:1/-1}
+.q-fer{background:#fce7f3;color:#9d174d;border-color:#fce7f3;grid-column:1/-1}
+.q-per{background:#dbeafe;color:#1d4ed8;border-color:#dbeafe;grid-column:1/-1}
+.q-del{background:#fef2f2;color:#ef4444;border-color:#fef2f2;grid-column:1/-1}
+.modal-footer{display:flex;gap:8px;margin-top:4px}
+.btn-cancel{flex:1;padding:11px;border:none;border-radius:8px;background:#f3f4f6;color:#6b7280;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif}
+.btn-save{flex:2;padding:11px;border:none;border-radius:8px;background:#111827;color:#fff;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="l-sub">Pasticceria Artigianale Fagotti</div>
+  <div class="l-title">Gestione Turni</div>
+  <div class="l-sub">Accesso riservato al team</div>
+  <input class="l-input" type="password" id="pwd" placeholder="Password" autocomplete="off">
+  <div class="l-err" id="lerr"></div>
+  <button class="l-btn" onclick="doLogin()">Entra →</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="header-sub">Pasticceria Artigianale Fagotti</div>
+      <h1>Gestione Turni</h1>
+    </div>
+    <div class="sync" id="sync-el">
+      <span id="sync-dot" style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block"></span>
+      <span id="sync-lbl" style="color:#f59e0b">...</span>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" id="btn-mese" onclick="setVista('mese')">📅 Mese</button>
+    <button class="nav-btn inactive" id="btn-ferie" onclick="setVista('ferie')">🏖️ Ferie & Permessi</button>
+  </div>
+
+  <div class="content">
+    <div id="view-mese"></div>
+    <div id="view-ferie" style="display:none"></div>
+  </div>
+</div>
+
+<!-- MODAL TURNO -->
+<div class="modal-overlay" id="modal" onclick="chiudiModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="modal-title">Modifica turno</h3>
+    <div class="quick-btns">
+      <button class="quick-btn q-mat" onclick="setQuick('07:00','14:00',false)">🟢 7:00–14:00</button>
+      <button class="quick-btn q-pom" onclick="setQuick('14:00','20:30',false)">🔴 14:00–20:30</button>
+      <button class="quick-btn q-gel" onclick="setQuick('07:00','14:00',true)">🍦 Gelateria (imposta orario custom)</button>
+      <button class="quick-btn q-fer" onclick="setSpeciale('F')">🏖️ Feria</button>
+      <button class="quick-btn q-per" onclick="setSpeciale('PE')">📋 Permesso</button>
+      <button class="quick-btn q-del" onclick="setSpeciale('X')">✕ Rimuovi turno</button>
+    </div>
+    <div style="border-top:1px solid #f3f4f6;padding-top:12px;margin-bottom:8px">
+      <span class="modal-label">Orario custom</span>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <input class="modal-input" type="time" id="m-inizio" style="margin:0;flex:1">
+        <span style="font-family:'DM Mono',monospace;font-size:12px;color:#9ca3af">–</span>
+        <input class="modal-input" type="time" id="m-fine" style="margin:0;flex:1">
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#6b7280;margin-bottom:10px;cursor:pointer">
+        <input type="checkbox" id="m-gel" style="width:16px;height:16px"> Turno gelateria
+      </label>
+      <button class="btn-save" style="width:100%" onclick="salvaCustom()">Salva orario</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="chiudiModal()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const PASSWORD = "fagotti2024";
+const FB_CONFIG = {
+  apiKey:"AIzaSyDTZFJlCeH6pmwE3tp3qU5dGh7x6XrHe2Q",
+  authDomain:"ordini-fagotti-bd9d8.firebaseapp.com",
+  projectId:"ordini-fagotti-bd9d8",
+  storageBucket:"ordini-fagotti-bd9d8.firebasestorage.app",
+  messagingSenderId:"968063747672",
+  appId:"1:968063747672:web:6c2476600dfeea517cec2d"
+};
+
+const DIPENDENTI = [
+  {nome:"Ilaria",  ruolo:"Customer & Invoicing"},
+  {nome:"Marika",  ruolo:"Supervisore"},
+  {nome:"Federica",ruolo:"Pasticcera"},
+  {nome:"Barbara", ruolo:"Pasticcera"},
+  {nome:"Aurora",  ruolo:"Pasticcera"},
+  {nome:"Giuseppe",ruolo:"Pasticcere"},
+  {nome:"Alessandra",ruolo:"Pasticcera"},
+  {nome:"Enrico",  ruolo:"Pasticcere"},
+  {nome:"Yuri",    ruolo:"Pasticcere"},
+  {nome:"Rita",    ruolo:"Pasticcera"},
+  {nome:"Sara",    ruolo:"Pasticcera (PT Ven-Dom)"},
+  {nome:"Noemi",   ruolo:"Lab"},
+  {nome:"Andrea",  ruolo:"Direzione"},
+];
+
+const GIORNI = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
+const MESI_IT = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+
+// ── STATO ────────────────────────────────────────────────────────────────────
+var db = null, unsub = null;
+var turni = {}, ferie = {}, permessi = {};
+var dataRiferimento = fmtData(new Date());
+var meseAttuale = new Date();
+var vista = "mese";
+var editModal = null; // {nome, data, turno}
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+function fmtData(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function G(id){return document.getElementById(id);}
+
+// ── FESTIVITÀ ─────────────────────────────────────────────────────────────────
+function calcPasqua(anno){
+  var a=anno%19,b=Math.floor(anno/100),c=anno%100,d=Math.floor(b/4),e=b%4,
+      f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,
+      i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,
+      m=Math.floor((a+11*h+22*l)/451),
+      mese=Math.floor((h+l-7*m+114)/31),giorno=((h+l-7*m+114)%31)+1;
+  return String(mese).padStart(2,"0")+"-"+String(giorno).padStart(2,"0");
+}
+function getFestivita(dateStr){
+  var parts=dateStr.split("-"),anno=parseInt(parts[0]),md=parts[1]+"-"+parts[2];
+  var fisse={"01-01":"Capodanno","01-06":"Epifania","04-25":"Liberazione","05-01":"Lavoro",
+    "06-02":"Repubblica","06-29":"S.Pietro","08-15":"Ferragosto","11-01":"Ognissanti",
+    "12-08":"Immacolata","12-25":"Natale","12-26":"S.Stefano"};
+  if(fisse[md]) return fisse[md];
+  var pmd=calcPasqua(anno);
+  if(md===pmd) return "Pasqua";
+  var pm=parseInt(pmd.split("-")[0]),pg=parseInt(pmd.split("-")[1]);
+  var pk=new Date(anno,pm-1,pg+1);
+  var pkmd=String(pk.getMonth()+1).padStart(2,"0")+"-"+String(pk.getDate()).padStart(2,"0");
+  if(md===pkmd) return "Pasquetta";
+  return null;
+}
+
+// ── FIREBASE ─────────────────────────────────────────────────────────────────
+function initFB(){
+  if(!firebase.apps||!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+  db=firebase.firestore();
+}
+function setSync(s){
+  var c={ok:"#22c55e",lo:"#f59e0b",er:"#ef4444"};
+  var t={ok:"Sync",lo:"...",er:"Errore"};
+  G("sync-dot").style.background=c[s];
+  G("sync-lbl").style.color=c[s];
+  G("sync-lbl").textContent=t[s];
+}
+function startListen(){
+  setSync("lo");
+  var doc=db.collection("turni-app").doc("stato");
+  if(unsub) unsub();
+  unsub=doc.onSnapshot(function(snap){
+    var d=snap.data()||{};
+    turni=d.turni||{};
+    ferie=d.ferie||{};
+    permessi=d.permessi||{};
+    if(d.dataRiferimento) dataRiferimento=d.dataRiferimento;
+    setSync("ok");
+    render();
+  },function(){setSync("er");});
+}
+function salva(payload){
+  setSync("lo");
+  db.collection("turni-app").doc("stato").set(payload,{merge:true})
+    .then(function(){setSync("ok");})
+    .catch(function(){setSync("er");});
+}
+
+// ── CALCOLI ───────────────────────────────────────────────────────────────────
+function getTurno(nome,data){return turni[nome+"|"+data]||{tipo:"X"};}
+function oreSettimana(nome,giorni){
+  return giorni.reduce(function(s,d){
+    var t=getTurno(nome,d);
+    if(!t.inizio||!t.fine) return s;
+    var h1=parseInt(t.inizio),m1=parseInt(t.inizio.split(":")[1]||0);
+    var h2=parseInt(t.fine),m2=parseInt(t.fine.split(":")[1]||0);
+    return s+((h2*60+m2)-(h1*60+m1))/60;
+  },0);
+}
+
+// Maturazione ferie/permessi
+function getMaturazione(){
+  var ref=new Date(dataRiferimento);
+  var annoI=ref.getFullYear()-(ref.getMonth()>=6?0:1);
+  var inizio=new Date(annoI,6,1);
+  var oggi=new Date();
+  var settimane=Math.max(0,Math.floor((oggi-inizio)/(1000*60*60*24*7)));
+  return {ferie:settimane*0.5,permessi:settimane*0.615};
+}
+function calcFerie(nome){
+  var mat=getMaturazione();
+  var ini=ferie[nome]&&ferie[nome].residuoIniziale!=null?ferie[nome].residuoIniziale:26;
+  var us=ferie[nome]&&ferie[nome].utilizzate!=null?ferie[nome].utilizzate:0;
+  return ini-us+mat.ferie;
+}
+function calcPermessi(nome){
+  var mat=getMaturazione();
+  var ini=permessi[nome]&&permessi[nome].residuoIniziale!=null?permessi[nome].residuoIniziale:32;
+  var us=permessi[nome]&&permessi[nome].utilizzati!=null?permessi[nome].utilizzati:0;
+  return ini-us+mat.permessi;
+}
+
+// ── MESE / SETTIMANE ──────────────────────────────────────────────────────────
+function getSettimaneMese(d){
+  var primo=new Date(d.getFullYear(),d.getMonth(),1);
+  var dow=primo.getDay();
+  var lun=new Date(primo);
+  lun.setDate(primo.getDate()-(dow===0?6:dow-1));
+  var setts=[];
+  for(var i=0;i<6;i++){
+    var ini=new Date(lun); ini.setDate(lun.getDate()+i*7);
+    var fin=new Date(ini); fin.setDate(ini.getDate()+6);
+    if(ini.getMonth()===d.getMonth()||fin.getMonth()===d.getMonth()){
+      var giorni=[];
+      for(var j=0;j<7;j++){var g=new Date(ini);g.setDate(ini.getDate()+j);giorni.push(fmtData(g));}
+      setts.push({inizio:fmtData(ini),fine:fmtData(fin),giorni:giorni});
+    }
+  }
+  return setts;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  if(vista==="mese") renderMese();
+  else renderFerie();
+}
+
+function renderMese(){
+  var setts=getSettimaneMese(meseAttuale);
+  var meseLbl=MESI_IT[meseAttuale.getMonth()]+" "+meseAttuale.getFullYear();
+  var html='<div class="mes-header">';
+  html+='<button class="btn-mes" onclick="cambiaMese(-1)">◀ Precedente</button>';
+  html+='<span class="mes-title">'+meseLbl+'</span>';
+  html+='<button class="btn-mes" onclick="cambiaMese(1)">Successivo ▶</button>';
+  html+='</div>';
+
+  setts.forEach(function(sett,idx){
+    html+='<div class="settimana">';
+    html+='<div class="set-header">Settimana '+(idx+1)+' · '+sett.inizio+' → '+sett.fine+'</div>';
+    html+='<div class="turni-grid">';
+    // Header giorni
+    html+='<div></div>';
+    sett.giorni.forEach(function(data,i){
+      var fest=getFestivita(data);
+      var num=data.split("-")[2];
+      html+='<div class="th-cell'+(fest?" festa":"")+'">';
+      html+=GIORNI[i].substring(0,3)+" "+parseInt(num);
+      if(fest) html+='<br><span style="font-size:7px">'+fest+'</span>';
+      html+='</div>';
+    });
+    html+='<div class="th-cell">Ore</div>';
+
+    // Righe dipendenti
+    DIPENDENTI.forEach(function(dip){
+      var ore=oreSettimana(dip.nome,sett.giorni);
+      html+='<div class="nome-cell">'+dip.nome+'<span class="ruolo-cell">'+dip.ruolo+'</span></div>';
+      sett.giorni.forEach(function(data,i){
+        var t=getTurno(dip.nome,data);
+        var fest=getFestivita(data);
+        var cls="g-cell ",label="X";
+        if(t.tipo==="F"){cls+="g-fer";label="F";}
+        else if(t.tipo==="PE"){cls+="g-per";label="PE";}
+        else if(t.inizio&&t.fine){
+          if(t.gelateria){cls+="g-gel";label="🍦 "+t.inizio+"-"+t.fine;}
+          else if(parseInt(t.inizio)<14){cls+="g-mat";label=t.inizio+"-"+t.fine;}
+          else{cls+="g-pom";label=t.inizio+"-"+t.fine;}
+        }
+        else if(fest){cls+="g-festa";}
+        else{cls+="g-x";}
+        var safeDip=dip.nome.replace(/'/g,"\\'");
+        html+='<div class="'+cls+'" onclick="apriModal(\''+safeDip+'\',\''+data+'\')">'+label+'</div>';
+      });
+      var oreClass=ore>=39&&ore<=43?"ore-ok":ore>43?"ore-over":"";
+      html+='<div class="ore-cell '+oreClass+'">'+(ore>0?ore.toFixed(1):"–")+'</div>';
+    });
+    html+='</div></div>';
+  });
+
+  // Legenda
+  html+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-family:DM Mono,monospace;font-size:10px">';
+  html+='<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px;font-weight:700">Mattino</span>';
+  html+='<span style="background:#fecaca;color:#991b1b;padding:2px 8px;border-radius:4px;font-weight:700">Pomeriggio</span>';
+  html+='<span style="background:#bfdbfe;color:#1e40af;padding:2px 8px;border-radius:4px;font-weight:700">Gelateria</span>';
+  html+='<span style="background:#fce7f3;color:#9d174d;padding:2px 8px;border-radius:4px;font-weight:700">F = Feria</span>';
+  html+='<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:4px;font-weight:700">PE = Permesso</span>';
+  html+='</div>';
+
+  G("view-mese").innerHTML=html;
+}
+
+function renderFerie(){
+  var html='<div style="font-family:DM Mono,monospace;font-size:10px;color:#9ca3af;margin-bottom:14px;padding:10px;background:#f9fafb;border-radius:8px">';
+  html+='Data riferimento: <input type="date" value="'+dataRiferimento+'" onchange="aggiornaDR(this.value)" style="border:1.5px solid #e5e7eb;border-radius:6px;padding:4px 8px;font-family:DM Mono,monospace;font-size:11px;outline:none;color:#111827">';
+  html+='</div>';
+
+  DIPENDENTI.forEach(function(dip){
+    var rf=calcFerie(dip.nome),rp=calcPermessi(dip.nome);
+    var cfClass=rf>5?"ok":rf>0?"warn":"neg";
+    var cpClass=rp>5?"ok":rp>0?"warn":"neg";
+    var fi=ferie[dip.nome]&&ferie[dip.nome].residuoIniziale!=null?ferie[dip.nome].residuoIniziale:26;
+    var fu=ferie[dip.nome]&&ferie[dip.nome].utilizzate!=null?ferie[dip.nome].utilizzate:0;
+    var pi=permessi[dip.nome]&&permessi[dip.nome].residuoIniziale!=null?permessi[dip.nome].residuoIniziale:32;
+    var pu=permessi[dip.nome]&&permessi[dip.nome].utilizzati!=null?permessi[dip.nome].utilizzati:0;
+    var safeDip=dip.nome.replace(/'/g,"\\'");
+
+    html+='<div class="ferie-card">';
+    html+='<div class="ferie-nome">'+dip.nome+'</div>';
+    html+='<div class="ferie-ruolo">'+dip.ruolo+'</div>';
+    html+='<div class="ferie-grid">';
+
+    // FERIE
+    html+='<div class="ferie-block">';
+    html+='<div class="ferie-block-title">🏖️ Ferie (gg)</div>';
+    html+='<div class="ferie-row"><span class="ferie-label">Residuo iniziale</span>';
+    html+='<input class="ferie-input" type="number" step="0.5" value="'+fi+'" onchange="aggiornaFerie(\''+safeDip+'\',\'residuoIniziale\',this.value)"></div>';
+    html+='<div class="ferie-row"><span class="ferie-label">Utilizzate</span>';
+    html+='<input class="ferie-input" type="number" step="0.5" value="'+fu+'" onchange="aggiornaFerie(\''+safeDip+'\',\'utilizzate\',this.value)"></div>';
+    html+='<div class="ferie-residuo '+cfClass+'">'+rf.toFixed(1)+' gg rimanenti</div>';
+    html+='</div>';
+
+    // PERMESSI
+    html+='<div class="ferie-block">';
+    html+='<div class="ferie-block-title">📋 Permessi (h)</div>';
+    html+='<div class="ferie-row"><span class="ferie-label">Residuo iniziale</span>';
+    html+='<input class="ferie-input" type="number" step="0.5" value="'+pi+'" onchange="aggiornaPermessi(\''+safeDip+'\',\'residuoIniziale\',this.value)"></div>';
+    html+='<div class="ferie-row"><span class="ferie-label">Utilizzati</span>';
+    html+='<input class="ferie-input" type="number" step="0.5" value="'+pu+'" onchange="aggiornaPermessi(\''+safeDip+'\',\'utilizzati\',this.value)"></div>';
+    html+='<div class="ferie-residuo '+cpClass+'">'+rp.toFixed(1)+' h rimanenti</div>';
+    html+='</div>';
+
+    html+='</div></div>';
+  });
+
+  G("view-ferie").innerHTML=html;
+}
+
+// ── AZIONI ────────────────────────────────────────────────────────────────────
+function cambiaMese(d){
+  meseAttuale=new Date(meseAttuale.getFullYear(),meseAttuale.getMonth()+d,1);
+  renderMese();
+}
+
+function setVista(v){
+  vista=v;
+  G("view-mese").style.display=v==="mese"?"block":"none";
+  G("view-ferie").style.display=v==="ferie"?"block":"none";
+  G("btn-mese").className="nav-btn "+(v==="mese"?"active":"inactive");
+  G("btn-ferie").className="nav-btn "+(v==="ferie"?"active":"inactive");
+  render();
+}
+
+function apriModal(nome,data){
+  editModal={nome:nome,data:data,turno:getTurno(nome,data)};
+  G("modal-title").textContent=nome+" · "+data;
+  var t=editModal.turno;
+  G("m-inizio").value=t.inizio||"07:00";
+  G("m-fine").value=t.fine||"14:00";
+  G("m-gel").checked=!!t.gelateria;
+  G("modal").classList.add("open");
+}
+function chiudiModal(e){
+  if(!e||e.target===G("modal")){G("modal").classList.remove("open");editModal=null;}
+}
+function setQuick(ini,fin,gel){
+  if(!editModal) return;
+  var key=editModal.nome+"|"+editModal.data;
+  var nt={...turni};
+  nt[key]={inizio:ini,fine:fin,gelateria:gel};
+  turni=nt;
+  salva({turni:nt});
+  G("modal").classList.remove("open");editModal=null;
+  render();
+}
+function setSpeciale(tipo){
+  if(!editModal) return;
+  var key=editModal.nome+"|"+editModal.data;
+  var nt={...turni};
+  if(tipo==="X"){delete nt[key];}
+  else{nt[key]={tipo:tipo};}
+  turni=nt;
+  salva({turni:nt});
+  G("modal").classList.remove("open");editModal=null;
+  render();
+}
+function salvaCustom(){
+  if(!editModal) return;
+  var ini=G("m-inizio").value,fin=G("m-fine").value,gel=G("m-gel").checked;
+  var key=editModal.nome+"|"+editModal.data;
+  var nt={...turni};
+  nt[key]={inizio:ini,fine:fin,gelateria:gel};
+  turni=nt;
+  salva({turni:nt});
+  G("modal").classList.remove("open");editModal=null;
+  render();
+}
+function aggiornaFerie(nome,campo,val){
+  var nf={...ferie};
+  if(!nf[nome]) nf[nome]={};
+  nf[nome][campo]=parseFloat(val)||0;
+  ferie=nf;
+  salva({ferie:nf});
+}
+function aggiornaPermessi(nome,campo,val){
+  var np={...permessi};
+  if(!np[nome]) np[nome]={};
+  np[nome][campo]=parseFloat(val)||0;
+  permessi=np;
+  salva({permessi:np});
+}
+function aggiornaDR(val){
+  dataRiferimento=val;
+  salva({dataRiferimento:val});
+  renderFerie();
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function doLogin(){
+  if(G("pwd").value===PASSWORD){
+    sessionStorage.setItem("turni_auth","1");
+    G("login").classList.add("hidden");
+    G("app").classList.add("on");
+    initFB();
+    startListen();
+  } else {
+    G("lerr").textContent="Password errata.";
+    G("pwd").value="";
+  }
+}
+G("pwd").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
+if(sessionStorage.getItem("turni_auth")){
+  G("login").classList.add("hidden");
+  G("app").classList.add("on");
+  initFB();
+  startListen();
+}
+</script>
+</body>
+</html>
