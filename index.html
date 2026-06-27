@@ -3,99 +3,161 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Fagotti · Gestione Turni</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<title>WorkMor · Gestione Turni</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Bricolage Grotesque',sans-serif;background:#fafaf8;color:#111827;min-height:100vh}
+
 /* LOGIN */
-#login{position:fixed;inset:0;background:#111827;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;z-index:9999}
+#login{position:fixed;inset:0;background:#111827;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;z-index:9999}
 #login.hidden{display:none}
+.l-logo{font-size:32px;font-weight:800;color:#fff}.l-logo span{color:#7c3aed}
 .l-sub{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:#9ca3af;text-transform:uppercase}
-.l-title{font-size:28px;font-weight:800;color:#fff}
-.l-input{width:100%;max-width:280px;padding:13px 18px;background:#1f2937;border:1px solid #374151;color:#fff;border-radius:12px;font-size:16px;text-align:center;outline:none;font-family:'DM Mono',monospace}
-.l-btn{width:100%;max-width:280px;padding:14px;background:#fff;color:#111827;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+.l-input{width:100%;max-width:280px;padding:13px 18px;background:#1f2937;border:1.5px solid #374151;color:#fff;border-radius:12px;font-size:16px;text-align:center;outline:none;font-family:'DM Mono',monospace;transition:border-color .2s}
+.l-input:focus{border-color:#7c3aed}
+.l-btn{width:100%;max-width:280px;padding:14px;background:#7c3aed;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif}
+.l-btn:hover{background:#6d28d9}
 .l-err{color:#f87171;font-family:'DM Mono',monospace;font-size:12px;min-height:16px}
+.l-free-badge{background:#1f2937;border:1px solid #374151;border-radius:20px;padding:6px 16px;font-family:'DM Mono',monospace;font-size:10px;color:#9ca3af;letter-spacing:1px}
+
 /* APP */
 #app{display:none;flex-direction:column;min-height:100vh}
 #app.on{display:flex}
-.header{background:#fff;border-bottom:2px solid #111827;padding:14px 16px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center}
-.header h1{font-size:22px;font-weight:800;color:#111827;margin:0}
-.header-sub{font-family:'DM Mono',monospace;font-size:8px;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px}
+
+/* HEADER */
+.hdr{background:#fff;border-bottom:2px solid #111827;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.hdr-left{}
+.hdr-brand{font-size:20px;font-weight:800;color:#111827}.hdr-brand span{color:#7c3aed}
+.hdr-attivita{font-family:'DM Mono',monospace;font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px}
 .sync{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px}
-.nav{display:flex;gap:8px;padding:12px 16px;background:#fff;border-bottom:1px solid #f3f4f6;position:sticky;top:57px;z-index:9}
-.nav-btn{padding:8px 16px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;font-family:'Bricolage Grotesque',sans-serif;transition:all .18s}
-.nav-btn.active{background:#111827;color:#fff}
-.nav-btn.inactive{background:#f3f4f6;color:#6b7280}
-.content{padding:16px;max-width:900px;margin:0 auto}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* NAV */
+.nav{display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid #f3f4f6;position:sticky;top:57px;z-index:19;overflow-x:auto}
+.nb{padding:8px 14px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:12px;font-family:'Bricolage Grotesque',sans-serif;white-space:nowrap;transition:all .15s}
+.nb.on{background:#111827;color:#fff}
+.nb.off{background:#f3f4f6;color:#6b7280}
+.nb.pro-locked{background:#f5f3ff;color:#7c3aed;border:1px dashed #c4b5fd}
+
+/* CONTENT */
+.content{padding:14px;max-width:960px;margin:0 auto;width:100%}
+
 /* MESE NAV */
-.mes-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.btn-mes{background:#111827;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:700;font-family:'Bricolage Grotesque',sans-serif;font-size:13px}
-.mes-title{font-weight:700;font-size:16px;color:#111827;text-transform:capitalize}
-/* SETTIMANA */
-.settimana{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px;margin-bottom:14px;overflow-x:auto}
-.set-header{font-weight:700;color:#111827;margin-bottom:10px;font-size:13px;font-family:'DM Mono',monospace}
-.turni-grid{display:grid;grid-template-columns:130px repeat(7,1fr) 56px;gap:4px;min-width:700px}
-.th-cell{text-align:center;font-size:10px;font-weight:700;color:#6b7280;padding:4px 2px;font-family:'DM Mono',monospace}
-.th-cell.festa{background:#f5e8d0;border-radius:6px;color:#8a6d3b}
-.nome-cell{font-size:11px;font-weight:700;color:#111827;display:flex;flex-direction:column;justify-content:center;padding:2px 4px}
-.ruolo-cell{font-size:9px;color:#9ca3af;font-weight:400;font-family:'DM Mono',monospace}
-.g-cell{border-radius:6px;padding:6px 2px;text-align:center;font-size:9px;font-weight:700;cursor:pointer;border:1px solid transparent;min-height:34px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;line-height:1.2}
-.g-x{background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb}
+.mes-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;background:#fff;border-radius:10px;padding:10px 14px;border:1px solid #e5e7eb}
+.btn-mes{background:#111827;color:#fff;border:none;padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:700;font-family:'Bricolage Grotesque',sans-serif;font-size:13px}
+.mes-label{font-weight:800;font-size:15px;color:#111827;text-transform:capitalize}
+
+/* TABELLA TURNI */
+.sett-box{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:12px;margin-bottom:12px;overflow-x:auto}
+.sett-label{font-family:'DM Mono',monospace;font-size:10px;color:#9ca3af;margin-bottom:10px;font-weight:700}
+.t-grid{display:grid;gap:4px;min-width:680px}
+.t-head{display:grid;grid-template-columns:130px repeat(7,1fr) 52px;gap:4px}
+.t-head-cell{text-align:center;font-size:10px;font-weight:700;color:#6b7280;padding:4px 2px;font-family:'DM Mono',monospace}
+.t-head-cell.festa{background:#fef3c7;border-radius:6px;color:#92400e}
+.t-row{display:grid;grid-template-columns:130px repeat(7,1fr) 52px;gap:4px;align-items:center}
+.dip-cell{font-size:11px;font-weight:700;color:#111827;padding:2px 4px}
+.dip-ruolo{font-size:9px;color:#9ca3af;font-weight:400;font-family:'DM Mono',monospace;display:block}
+.g-cell{border-radius:6px;padding:5px 2px;text-align:center;font-size:9px;font-weight:700;cursor:pointer;min-height:32px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;line-height:1.2;transition:opacity .1s}
+.g-cell:active{opacity:.7}
+.g-x{background:#f3f4f6;color:#9ca3af}
 .g-mat{background:#dcfce7;color:#166534}
 .g-pom{background:#fecaca;color:#991b1b}
-.g-gel{background:#bfdbfe;color:#1e40af}
+.g-t3{background:#bfdbfe;color:#1e40af}
 .g-fer{background:#fce7f3;color:#9d174d}
 .g-per{background:#dbeafe;color:#1d4ed8}
-.g-festa{background:#f5e8d0;color:#8a6d3b}
-.ore-cell{background:#f3f4f6;color:#6b7280;border-radius:6px;padding:6px 2px;text-align:center;font-size:10px;font-weight:800;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:center}
+.g-mal{background:#fff3cd;color:#856404}
+.g-festa{background:#fef3c7;color:#92400e}
+.g-chiuso{background:#f1f5f9;color:#94a3b8;border:1px dashed #cbd5e1;cursor:default!important;pointer-events:none}
+.ore-cell{background:#f3f4f6;color:#6b7280;border-radius:6px;padding:5px 2px;text-align:center;font-size:10px;font-weight:800;font-family:'DM Mono',monospace;min-height:32px;display:flex;align-items:center;justify-content:center}
 .ore-ok{background:#dcfce7;color:#166534}
 .ore-over{background:#fecaca;color:#991b1b}
-/* FERIE */
-.ferie-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:16px;margin-bottom:10px}
-.ferie-nome{font-size:15px;font-weight:800;color:#111827;margin-bottom:4px}
-.ferie-ruolo{font-size:10px;font-family:'DM Mono',monospace;color:#9ca3af;margin-bottom:12px}
-.ferie-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ferie-block{background:#f9fafb;border-radius:8px;padding:10px}
-.ferie-block-title{font-family:'DM Mono',monospace;font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.ferie-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px}
-.ferie-label{color:#6b7280}
-.ferie-input{width:64px;border:1.5px solid #e5e7eb;border-radius:6px;padding:4px 6px;font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none}
-.ferie-residuo{font-size:18px;font-weight:800;color:#111827;margin-top:6px}
-.ferie-residuo.ok{color:#166534}
-.ferie-residuo.warn{color:#d97706}
-.ferie-residuo.neg{color:#dc2626}
+
+/* LEGENDA */
+.legenda{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;padding:6px 0}
+.leg-pill{padding:3px 10px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;font-weight:700}
+
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:16px}
 .modal-overlay.open{display:flex}
-.modal{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
-.modal h3{font-size:15px;font-weight:800;margin-bottom:14px;color:#111827}
-.modal-label{font-family:'DM Mono',monospace;font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:block}
-.modal-input{width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px;font-family:'DM Mono',monospace;font-size:13px;margin-bottom:10px;outline:none;color:#111827}
-.modal-input:focus{border-color:#111827}
-.quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
-.quick-btn{padding:10px 6px;border-radius:8px;border:2px solid transparent;font-weight:700;cursor:pointer;font-size:12px;font-family:'Bricolage Grotesque',sans-serif}
-.q-mat{background:#dcfce7;color:#166534;border-color:#dcfce7}
-.q-pom{background:#fecaca;color:#991b1b;border-color:#fecaca}
-.q-gel{background:#bfdbfe;color:#1e40af;border-color:#bfdbfe;grid-column:1/-1}
-.q-fer{background:#fce7f3;color:#9d174d;border-color:#fce7f3;grid-column:1/-1}
-.q-per{background:#dbeafe;color:#1d4ed8;border-color:#dbeafe;grid-column:1/-1}
-.q-del{background:#fef2f2;color:#ef4444;border-color:#fef2f2;grid-column:1/-1}
-.modal-footer{display:flex;gap:8px;margin-top:4px}
-.btn-cancel{flex:1;padding:11px;border:none;border-radius:8px;background:#f3f4f6;color:#6b7280;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif}
-.btn-save{flex:2;padding:11px;border:none;border-radius:8px;background:#111827;color:#fff;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif}
+.modal{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:800;margin-bottom:4px;color:#111827}
+.modal-data{font-family:'DM Mono',monospace;font-size:10px;color:#9ca3af;margin-bottom:16px}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.q-btn{padding:12px 8px;border-radius:10px;border:2px solid transparent;font-weight:700;cursor:pointer;font-size:12px;font-family:'Bricolage Grotesque',sans-serif;text-align:center;transition:all .15s}
+.q-btn:active{opacity:.8}
+.q-mat{background:#dcfce7;color:#166534}
+.q-pom{background:#fecaca;color:#991b1b}
+.q-t3{background:#bfdbfe;color:#1e40af;grid-column:1/-1}
+.q-fer{background:#fce7f3;color:#9d174d;grid-column:1/-1}
+.q-per{background:#dbeafe;color:#1d4ed8;grid-column:1/-1}
+.q-mal{background:#fff3cd;color:#856404;grid-column:1/-1}
+.q-del{background:#fef2f2;color:#ef4444;border-color:#fca5a5;grid-column:1/-1}
+.custom-section{border-top:1px solid #f3f4f6;padding-top:12px;margin-bottom:12px}
+.custom-label{font-family:'DM Mono',monospace;font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block}
+.time-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.time-input{flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px;font-family:'DM Mono',monospace;font-size:14px;text-align:center;outline:none;color:#111827}
+.time-input:focus{border-color:#7c3aed}
+.time-sep{font-family:'DM Mono',monospace;font-size:12px;color:#9ca3af}
+.btn-salva-custom{width:100%;padding:11px;border:none;border-radius:10px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;margin-bottom:8px}
+.btn-cancel{width:100%;padding:10px;border:none;border-radius:10px;background:#f3f4f6;color:#6b7280;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;font-size:13px}
+
+/* FERIE */
+.ferie-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px;margin-bottom:8px}
+.ferie-nome{font-size:14px;font-weight:800;color:#111827}
+.ferie-ruolo{font-family:'DM Mono',monospace;font-size:9px;color:#9ca3af;margin-bottom:10px;margin-top:2px}
+.ferie-griglia{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ferie-block{background:#f9fafb;border-radius:8px;padding:10px}
+.ferie-block-title{font-family:'DM Mono',monospace;font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.ferie-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:#6b7280}
+.ferie-inp{width:64px;border:1.5px solid #e5e7eb;border-radius:6px;padding:4px 6px;font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;color:#111827}
+.ferie-residuo{font-size:18px;font-weight:800;margin-top:6px}
+.res-ok{color:#166534}.res-warn{color:#d97706}.res-neg{color:#dc2626}
+.pro-locked-ferie{background:#f5f3ff;border-radius:8px;padding:14px;text-align:center;border:1px dashed #c4b5fd;margin-top:8px}
+
+/* IMPOSTAZIONI */
+.sett-section{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:16px;margin-bottom:12px}
+.sett-title{font-size:14px;font-weight:800;color:#111827;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.inp-label{font-family:'DM Mono',monospace;font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:block}
+.inp-field{width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;outline:none;color:#111827;margin-bottom:10px}
+.inp-field:focus{border-color:#7c3aed}
+.turno-conf{background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:8px}
+.turno-conf-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.turno-time-row{display:flex;gap:8px;align-items:center}
+.turno-time-inp{flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:9px;font-family:'DM Mono',monospace;font-size:14px;text-align:center;outline:none;color:#111827}
+.turno-time-inp:focus{border-color:#7c3aed}
+.dip-list{display:flex;flex-direction:column;gap:6px}
+.dip-row{display:flex;gap:8px;align-items:center}
+.dip-inp{flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;color:#111827}
+.dip-inp:focus{border-color:#7c3aed}
+.dip-ruolo-inp{width:140px;border:1.5px solid #e5e7eb;border-radius:8px;padding:9px;font-size:12px;outline:none;color:#111827;font-family:'DM Mono',monospace}
+.btn-rm-dip{padding:8px 10px;border:1px solid #fca5a5;border-radius:8px;background:#fef2f2;color:#ef4444;cursor:pointer;font-size:14px;font-weight:700}
+.btn-add-dip{width:100%;padding:10px;border:2px dashed #e5e7eb;border-radius:8px;background:transparent;cursor:pointer;font-size:13px;color:#9ca3af;font-family:'Bricolage Grotesque',sans-serif;margin-top:6px}
+.btn-add-dip:hover{border-color:#7c3aed;color:#7c3aed}
+.btn-salva-sett{width:100%;padding:13px;border:none;border-radius:10px;background:#7c3aed;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif}
+.free-limit-warn{background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;font-family:'DM Mono',monospace;margin-top:6px;text-align:center}
+
+/* PRO MODAL */
+.pro-modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:360px;text-align:center}
+.pro-modal h2{font-size:20px;font-weight:800;color:#7c3aed;margin-bottom:8px}
+.pro-modal p{font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:20px}
+.pro-features{text-align:left;background:#f5f3ff;border-radius:10px;padding:14px;margin-bottom:20px}
+.pro-feat{font-size:13px;color:#111827;padding:4px 0;display:flex;gap:8px;align-items:center}
+.pro-price{font-size:28px;font-weight:800;color:#111827;margin-bottom:4px}
+.pro-price-sub{font-size:12px;color:#9ca3af;margin-bottom:16px}
+.btn-pro{width:100%;padding:14px;border:none;border-radius:12px;background:#7c3aed;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;margin-bottom:8px}
+.btn-pro-cancel{width:100%;padding:10px;border:none;border-radius:10px;background:#f3f4f6;color:#6b7280;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;font-size:13px}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="login">
-  <div class="l-sub">Pasticceria Artigianale Fagotti</div>
-  <div class="l-title">Gestione Turni</div>
-  <div class="l-sub">Accesso riservato al team</div>
+  <div class="l-logo">Work<span>Mor</span></div>
+  <div class="l-sub">Gestione Turni & Ferie</div>
+  <div class="l-free-badge">⭐ Versione Pro · Tutto sbloccato</div>
   <input class="l-input" type="password" id="pwd" placeholder="Password" autocomplete="off">
   <div class="l-err" id="lerr"></div>
   <button class="l-btn" onclick="doLogin()">Entra →</button>
@@ -103,199 +165,220 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:#fafaf8;color:#1118
 
 <!-- APP -->
 <div id="app">
-  <div class="header">
-    <div>
-      <div class="header-sub">Pasticceria Artigianale Fagotti</div>
-      <h1>Gestione Turni</h1>
+  <div class="hdr">
+    <div class="hdr-left">
+      <div style="background:#7c3aed;color:#fff;text-align:center;padding:5px;font-family:DM Mono,monospace;font-size:10px;font-weight:700;letter-spacing:1px">⭐ WORKMOR PRO</div><div class="hdr-attivita" id="hdr-attivita">La mia attività</div>
+      <div class="hdr-brand">Work<span>Mor</span></div>
     </div>
-    <div class="sync" id="sync-el">
-      <span id="sync-dot" style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block"></span>
+    <div class="sync">
+      <span class="sync-dot" id="sync-dot" style="background:#f59e0b"></span>
       <span id="sync-lbl" style="color:#f59e0b">...</span>
     </div>
   </div>
 
   <div class="nav">
-    <button class="nav-btn active" id="btn-mese" onclick="setVista('mese')">📅 Mese</button>
-    <button class="nav-btn inactive" id="btn-ferie" onclick="setVista('ferie')">🏖️ Ferie & Permessi</button>
+    <button class="nb on" id="btn-mese" onclick="setVista('mese')">📅 Mese</button>
+    <button class="nb off" id="btn-ferie" onclick="setVistaFerie()">🏖️ Ferie & Permessi</button>
+    <button class="nb off" id="btn-sett" onclick="setVista('impostazioni')">⚙️ Impostazioni</button>
   </div>
 
   <div class="content">
-    <div id="view-mese"></div>
-    <div id="view-ferie" style="display:none"></div>
+    <div id="v-mese"></div>
+    <div id="v-ferie" style="display:none"></div>
+    <div id="v-impostazioni" style="display:none"></div>
   </div>
 </div>
 
 <!-- MODAL TURNO -->
-<div class="modal-overlay" id="modal" onclick="chiudiModal(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <h3 id="modal-title">Modifica turno</h3>
-    <div class="quick-btns">
-      <button class="quick-btn q-mat" onclick="setQuick('07:00','14:00',false)">🟢 7:00–14:00</button>
-      <button class="quick-btn q-pom" onclick="setQuick('14:00','20:30',false)">🔴 14:00–20:30</button>
-      <button class="quick-btn q-gel" onclick="setQuick('07:00','14:00',true)">🍦 Gelateria (imposta orario custom)</button>
-      <button class="quick-btn q-fer" onclick="setSpeciale('F')">🏖️ Feria</button>
-      <button class="quick-btn q-per" onclick="setSpeciale('PE')">📋 Permesso</button>
-      <button class="quick-btn q-del" onclick="setSpeciale('X')">✕ Rimuovi turno</button>
+<div class="modal-overlay" id="modal-turno" onclick="if(event.target===this)chiudiModal()">
+  <div class="modal">
+    <h3 id="modal-nome">Modifica turno</h3>
+    <div class="modal-data" id="modal-data"></div>
+    <div class="quick-grid" id="quick-grid">
+      <!-- generato dinamicamente -->
     </div>
-    <div style="border-top:1px solid #f3f4f6;padding-top:12px;margin-bottom:8px">
-      <span class="modal-label">Orario custom</span>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-        <input class="modal-input" type="time" id="m-inizio" style="margin:0;flex:1">
-        <span style="font-family:'DM Mono',monospace;font-size:12px;color:#9ca3af">–</span>
-        <input class="modal-input" type="time" id="m-fine" style="margin:0;flex:1">
+    <div class="custom-section">
+      <span class="custom-label">⏰ Orario personalizzato</span>
+      <div class="time-row">
+        <input class="time-input" type="time" id="m-inizio">
+        <span class="time-sep">→</span>
+        <input class="time-input" type="time" id="m-fine">
       </div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#6b7280;margin-bottom:10px;cursor:pointer">
-        <input type="checkbox" id="m-gel" style="width:16px;height:16px"> Turno gelateria
-      </label>
-      <button class="btn-save" style="width:100%" onclick="salvaCustom()">Salva orario</button>
+      <button class="btn-salva-custom" onclick="salvaCustom()">✓ Salva orario</button>
     </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="chiudiModal()">Annulla</button>
+    <button class="btn-cancel" onclick="chiudiModal()">Annulla</button>
+  </div>
+</div>
+
+<!-- MODAL PERMESSO ORE -->
+<div class="modal-overlay" id="modal-pe" onclick="if(event.target===this)chiudiModalPe()">
+  <div class="modal">
+    <h3>📋 Permesso</h3>
+    <div class="modal-data" id="pe-data"></div>
+    <div style="margin-bottom:14px">
+      <span class="custom-label">Quante ore di permesso?</span>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        <button class="q-btn q-per" onclick="salvaPermessoOre(1)">1h</button>
+        <button class="q-btn q-per" onclick="salvaPermessoOre(2)">2h</button>
+        <button class="q-btn q-per" onclick="salvaPermessoOre(3)">3h</button>
+        <button class="q-btn q-per" onclick="salvaPermessoOre(4)">4h</button>
+        <button class="q-btn q-per" onclick="salvaPermessoOre(5)">5h</button>
+        <button class="q-btn q-per" onclick="salvaPermessoOre(6)">6h</button>
+        <button class="q-btn q-per" onclick="salvaPermessoOre(7)">7h</button>
+        <button class="q-btn q-per" onclick="salvaPermessoOre(8)">8h</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#9ca3af">Altro:</span>
+        <input type="number" id="pe-ore-custom" min="0.5" max="12" step="0.5" placeholder="es. 2.5"
+          style="width:80px;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-family:'DM Mono',monospace;font-size:13px;text-align:center;outline:none">
+        <button onclick="salvaPermessoOre(parseFloat(document.getElementById('pe-ore-custom').value)||0)"
+          style="padding:8px 14px;border:none;border-radius:8px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif">OK</button>
+      </div>
     </div>
+    <button class="btn-cancel" onclick="chiudiModalPe()">Annulla</button>
+  </div>
+</div>
+<!-- MODAL PERMESSO SETTIMANALE -->
+<div class="modal-overlay" id="modal-perm" onclick="if(event.target===this)chiudiModalPerm()">
+  <div class="modal">
+    <h3>📋 Aggiungi Permesso</h3>
+    <div class="modal-data" id="perm-modal-nome"></div>
+    <div style="margin-bottom:12px">
+      <span class="custom-label">Ore di permesso prese</span>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+        <button class="q-btn q-per" onclick="G('perm-ore').value=1">1h</button>
+        <button class="q-btn q-per" onclick="G('perm-ore').value=2">2h</button>
+        <button class="q-btn q-per" onclick="G('perm-ore').value=3">3h</button>
+        <button class="q-btn q-per" onclick="G('perm-ore').value=4">4h</button>
+        <button class="q-btn q-per" onclick="G('perm-ore').value=5">5h</button>
+        <button class="q-btn q-per" onclick="G('perm-ore').value=6">6h</button>
+        <button class="q-btn q-per" onclick="G('perm-ore').value=7">7h</button>
+        <button class="q-btn q-per" onclick="G('perm-ore').value=8">8h</button>
+      </div>
+      <input type="number" id="perm-ore" min="0.5" max="24" step="0.5" placeholder="Oppure inserisci ore (es. 2.5)"
+        style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px;font-family:DM Mono,monospace;font-size:14px;text-align:center;outline:none;margin-bottom:10px">
+      <span class="custom-label">Nota (opzionale)</span>
+      <input type="text" id="perm-nota" placeholder="Es: visita medica, motivi familiari..."
+        style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px;font-size:13px;outline:none;margin-bottom:12px">
+    </div>
+    <button class="btn-salva-custom" onclick="salvaPermessoSettimana()">✓ Aggiungi permesso</button>
+    <button class="btn-cancel" onclick="chiudiModalPerm()" style="margin-top:8px">Annulla</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-pro" onclick="if(event.target===this)chiudiModalPro()">
+  <div class="pro-modal">
+    <div style="font-size:40px;margin-bottom:10px">⭐</div>
+    <h2>WorkMor Pro</h2>
+    <p>Sblocca tutte le funzionalità per gestire al meglio il tuo team.</p>
+    <div class="pro-features">
+      <div class="pro-feat">✅ Dipendenti illimitati</div>
+      <div class="pro-feat">✅ Gestione Ferie & Permessi</div>
+      <div class="pro-feat">✅ Calcolo ore mensile</div>
+      <div class="pro-feat">✅ Export PDF turni</div>
+      <div class="pro-feat">✅ Supporto prioritario</div>
+    </div>
+    <div class="pro-price">€4<span style="font-size:16px;font-weight:400">,90/anno</span></div>
+    <div class="pro-price-sub">Meno di un caffè al mese ☕</div>
+    <button class="btn-pro" onclick="alert('Acquisto disponibile su workmor.app')">Passa a Pro →</button>
+    <button class="btn-pro-cancel" onclick="chiudiModalPro()">Non ora</button>
   </div>
 </div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-const PASSWORD = "fagotti2024";
-const FB_CONFIG = {
-  apiKey:"AIzaSyDTZFJlCeH6pmwE3tp3qU5dGh7x6XrHe2Q",
-  authDomain:"ordini-fagotti-bd9d8.firebaseapp.com",
-  projectId:"ordini-fagotti-bd9d8",
-  storageBucket:"ordini-fagotti-bd9d8.firebasestorage.app",
-  messagingSenderId:"968063747672",
-  appId:"1:968063747672:web:6c2476600dfeea517cec2d"
-};
+// ── STORAGE ─────────────────────────────────────────────────────────────────
+var SK = "workmor_turni_pro_v1";
 
-const DIPENDENTI = [
-  {nome:"Ilaria",  ruolo:"Customer & Invoicing"},
-  {nome:"Marika",  ruolo:"Supervisore"},
-  {nome:"Federica",ruolo:"Pasticcera"},
-  {nome:"Barbara", ruolo:"Pasticcera"},
-  {nome:"Aurora",  ruolo:"Pasticcera"},
-  {nome:"Giuseppe",ruolo:"Pasticcere"},
-  {nome:"Alessandra",ruolo:"Pasticcera"},
-  {nome:"Enrico",  ruolo:"Pasticcere"},
-  {nome:"Yuri",    ruolo:"Pasticcere"},
-  {nome:"Rita",    ruolo:"Pasticcera"},
-  {nome:"Sara",    ruolo:"Pasticcera (PT Ven-Dom)"},
-  {nome:"Noemi",   ruolo:"Lab"},
-  {nome:"Andrea",  ruolo:"Direzione"},
-];
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch(e) { return {}; }
+}
+function saveData(d) {
+  try { localStorage.setItem(SK, JSON.stringify(d)); setSync("ok"); } catch(e) { setSync("er"); }
+}
 
-const GIORNI = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
-const MESI_IT = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+// ── STATO GLOBALE ────────────────────────────────────────────────────────────
+var DATA = loadData();
 
-// ── STATO ────────────────────────────────────────────────────────────────────
-var db = null, unsub = null;
-var turni = {}, ferie = {}, permessi = {};
-var dataRiferimento = fmtData(new Date());
+// Impostazioni default
+if (!DATA.impostazioni) {
+  DATA.impostazioni = {
+    nomeAttivita: "Pasticceria Fagotti",
+    password: "fagotti2024",
+    giorniChiusura: [],
+    ccnl: "pubblici_esercizi",
+    turni: [
+      { nome: "Mattina", emoji: "🟢", inizio: "07:00", fine: "14:00", colore: "mat" },
+      { nome: "Pomeriggio", emoji: "🔴", inizio: "14:00", fine: "21:00", colore: "pom" },
+      { nome: "", emoji: "🔵", inizio: "", fine: "", colore: "t3", attivo: false },
+    ],
+    dipendenti: [
+      { nome: "Ilaria",     ruolo: "Customer & Invoicing", oreContratto: 40 },
+      { nome: "Marika",     ruolo: "Supervisore", oreContratto: 40 },
+      { nome: "Federica",   ruolo: "Pasticcera", oreContratto: 40 },
+      { nome: "Barbara",    ruolo: "Pasticcera", oreContratto: 40 },
+      { nome: "Aurora",     ruolo: "Pasticcera", oreContratto: 40 },
+      { nome: "Giuseppe",   ruolo: "Pasticcere", oreContratto: 40 },
+      { nome: "Alessandra", ruolo: "Pasticcera", oreContratto: 40 },
+      { nome: "Enrico",     ruolo: "Pasticcere", oreContratto: 40 },
+      { nome: "Yuri",       ruolo: "Pasticcere", oreContratto: 40 },
+      { nome: "Rita",       ruolo: "Pasticcera", oreContratto: 40 },
+      { nome: "Sara",       ruolo: "Pasticcera (PT Ven-Dom)", oreContratto: 20 },
+      { nome: "Noemi",      ruolo: "Lab", oreContratto: 40 },
+      { nome: "Andrea",     ruolo: "Direzione", oreContratto: 40 },
+    ]
+  };
+  saveData(DATA);
+}
+if (!DATA.turni) { DATA.turni = {}; saveData(DATA); }
+if (!DATA.ferie) { DATA.ferie = {}; saveData(DATA); }
+if (!DATA.permessi) { DATA.permessi = {}; saveData(DATA); }
+
+var IS_PRO = true; // PRO ATTIVO
+var FREE_LIMIT = 9999;
+var editModal = null;
 var meseAttuale = new Date();
 var vista = "mese";
-var editModal = null; // {nome, data, turno}
 
 // ── UTILS ────────────────────────────────────────────────────────────────────
-function fmtData(d){
-  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function G(id) { return document.getElementById(id); }
+function fmtData(d) {
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
 }
-function G(id){return document.getElementById(id);}
+function setSync(s) {
+  var c = {ok:"#22c55e", lo:"#f59e0b", er:"#ef4444"};
+  var t = {ok:"Salvato", lo:"...", er:"Errore"};
+  G("sync-dot").style.background = c[s];
+  G("sync-lbl").style.color = c[s];
+  G("sync-lbl").textContent = t[s];
+}
 
 // ── FESTIVITÀ ─────────────────────────────────────────────────────────────────
-function calcPasqua(anno){
-  var a=anno%19,b=Math.floor(anno/100),c=anno%100,d=Math.floor(b/4),e=b%4,
-      f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,
-      i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,
-      m=Math.floor((a+11*h+22*l)/451),
-      mese=Math.floor((h+l-7*m+114)/31),giorno=((h+l-7*m+114)%31)+1;
-  return String(mese).padStart(2,"0")+"-"+String(giorno).padStart(2,"0");
+function calcPasqua(y) {
+  var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4;
+  var f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+  var h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4;
+  var l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  var mo=Math.floor((h+l-7*m+114)/31),gi=((h+l-7*m+114)%31)+1;
+  return String(mo).padStart(2,"0")+"-"+String(gi).padStart(2,"0");
 }
-function getFestivita(dateStr){
-  var parts=dateStr.split("-"),anno=parseInt(parts[0]),md=parts[1]+"-"+parts[2];
-  var fisse={"01-01":"Capodanno","01-06":"Epifania","04-25":"Liberazione","05-01":"Lavoro",
-    "06-02":"Repubblica","06-29":"S.Pietro","08-15":"Ferragosto","11-01":"Ognissanti",
+function getFest(ds) {
+  var p=ds.split("-"),y=parseInt(p[0]),md=p[1]+"-"+p[2];
+  var f={"01-01":"Capodanno","01-06":"Epifania","04-25":"Liberazione","05-01":"Lavoro",
+    "06-02":"Repubblica","08-15":"Ferragosto","11-01":"Ognissanti",
     "12-08":"Immacolata","12-25":"Natale","12-26":"S.Stefano"};
-  if(fisse[md]) return fisse[md];
-  var pmd=calcPasqua(anno);
+  if(f[md]) return f[md];
+  var pmd=calcPasqua(y),pm=parseInt(pmd.split("-")[0]),pg=parseInt(pmd.split("-")[1]);
   if(md===pmd) return "Pasqua";
-  var pm=parseInt(pmd.split("-")[0]),pg=parseInt(pmd.split("-")[1]);
-  var pk=new Date(anno,pm-1,pg+1);
+  var pk=new Date(y,pm-1,pg+1);
   var pkmd=String(pk.getMonth()+1).padStart(2,"0")+"-"+String(pk.getDate()).padStart(2,"0");
   if(md===pkmd) return "Pasquetta";
   return null;
 }
 
-// ── FIREBASE ─────────────────────────────────────────────────────────────────
-function initFB(){
-  if(!firebase.apps||!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
-  db=firebase.firestore();
-}
-function setSync(s){
-  var c={ok:"#22c55e",lo:"#f59e0b",er:"#ef4444"};
-  var t={ok:"Sync",lo:"...",er:"Errore"};
-  G("sync-dot").style.background=c[s];
-  G("sync-lbl").style.color=c[s];
-  G("sync-lbl").textContent=t[s];
-}
-function startListen(){
-  setSync("lo");
-  var doc=db.collection("turni-app").doc("stato");
-  if(unsub) unsub();
-  unsub=doc.onSnapshot(function(snap){
-    var d=snap.data()||{};
-    turni=d.turni||{};
-    ferie=d.ferie||{};
-    permessi=d.permessi||{};
-    if(d.dataRiferimento) dataRiferimento=d.dataRiferimento;
-    setSync("ok");
-    render();
-  },function(){setSync("er");});
-}
-function salva(payload){
-  setSync("lo");
-  db.collection("turni-app").doc("stato").set(payload,{merge:true})
-    .then(function(){setSync("ok");})
-    .catch(function(){setSync("er");});
-}
-
-// ── CALCOLI ───────────────────────────────────────────────────────────────────
-function getTurno(nome,data){return turni[nome+"|"+data]||{tipo:"X"};}
-function oreSettimana(nome,giorni){
-  return giorni.reduce(function(s,d){
-    var t=getTurno(nome,d);
-    if(!t.inizio||!t.fine) return s;
-    var h1=parseInt(t.inizio),m1=parseInt(t.inizio.split(":")[1]||0);
-    var h2=parseInt(t.fine),m2=parseInt(t.fine.split(":")[1]||0);
-    return s+((h2*60+m2)-(h1*60+m1))/60;
-  },0);
-}
-
-// Maturazione ferie/permessi
-function getMaturazione(){
-  var ref=new Date(dataRiferimento);
-  var annoI=ref.getFullYear()-(ref.getMonth()>=6?0:1);
-  var inizio=new Date(annoI,6,1);
-  var oggi=new Date();
-  var settimane=Math.max(0,Math.floor((oggi-inizio)/(1000*60*60*24*7)));
-  return {ferie:settimane*0.5,permessi:settimane*0.615};
-}
-function calcFerie(nome){
-  var mat=getMaturazione();
-  var ini=ferie[nome]&&ferie[nome].residuoIniziale!=null?ferie[nome].residuoIniziale:26;
-  var us=ferie[nome]&&ferie[nome].utilizzate!=null?ferie[nome].utilizzate:0;
-  return ini-us+mat.ferie;
-}
-function calcPermessi(nome){
-  var mat=getMaturazione();
-  var ini=permessi[nome]&&permessi[nome].residuoIniziale!=null?permessi[nome].residuoIniziale:32;
-  var us=permessi[nome]&&permessi[nome].utilizzati!=null?permessi[nome].utilizzati:0;
-  return ini-us+mat.permessi;
-}
-
-// ── MESE / SETTIMANE ──────────────────────────────────────────────────────────
-function getSettimaneMese(d){
+// ── CALCOLI SETTIMANE ─────────────────────────────────────────────────────────
+function getSettimane(d) {
   var primo=new Date(d.getFullYear(),d.getMonth(),1);
-  var dow=primo.getDay();
-  var lun=new Date(primo);
+  var dow=primo.getDay(),lun=new Date(primo);
   lun.setDate(primo.getDate()-(dow===0?6:dow-1));
   var setts=[];
   for(var i=0;i<6;i++){
@@ -309,220 +392,725 @@ function getSettimaneMese(d){
   }
   return setts;
 }
+var GIORNI=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
-function render(){
-  if(vista==="mese") renderMese();
-  else renderFerie();
+function getTurno(nome,data){ return DATA.turni[nome+"|"+data]||null; }
+function oreSettimana(nome,giorni){
+  return giorni.reduce(function(s,d){
+    var t=getTurno(nome,d);
+    if(!t||!t.inizio||!t.fine) return s;
+    var h1=parseInt(t.inizio),m1=parseInt(t.inizio.split(":")[1]);
+    var h2=parseInt(t.fine),m2=parseInt(t.fine.split(":")[1]);
+    return s+((h2*60+m2)-(h1*60+m1))/60;
+  },0);
 }
 
-function renderMese(){
-  var setts=getSettimaneMese(meseAttuale);
-  var meseLbl=MESI_IT[meseAttuale.getMonth()]+" "+meseAttuale.getFullYear();
-  var html='<div class="mes-header">';
-  html+='<button class="btn-mes" onclick="cambiaMese(-1)">◀ Precedente</button>';
-  html+='<span class="mes-title">'+meseLbl+'</span>';
-  html+='<button class="btn-mes" onclick="cambiaMese(1)">Successivo ▶</button>';
+// ── RENDER MESE ───────────────────────────────────────────────────────────────
+function renderMese() {
+  var imp=DATA.impostazioni;
+  var dips=imp.dipendenti||[];
+  var turniConf=imp.turni||[];
+  var setts=getSettimane(meseAttuale);
+  var meseLbl=meseAttuale.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+  var html='<div class="mes-nav">';
+  html+='<button class="btn-mes" onclick="cambiaMese(-1)">◀</button>';
+  html+='<span class="mes-label">'+meseLbl+'</span>';
+  html+='<button class="btn-mes" onclick="cambiaMese(1)">▶</button>';
   html+='</div>';
+  // Bottone PDF solo Pro
+  if(IS_PRO){
+    html+='<button onclick="generaPDF()" style="width:100%;margin-bottom:12px;padding:11px;border:none;border-radius:10px;background:#111827;color:#fff;font-weight:700;cursor:pointer;font-family:Bricolage Grotesque,sans-serif;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px">📄 Esporta PDF mese per commercialista</button>';
+  }
 
-  setts.forEach(function(sett,idx){
-    html+='<div class="settimana">';
-    html+='<div class="set-header">Settimana '+(idx+1)+' · '+sett.inizio+' → '+sett.fine+'</div>';
-    html+='<div class="turni-grid">';
+  setts.forEach(function(sett,si){
+    html+='<div class="sett-box">';
+    html+='<div class="sett-label">Settimana '+(si+1)+' · '+sett.inizio+' → '+sett.fine+'</div>';
+    html+='<div class="t-grid">';
+
     // Header giorni
+    html+='<div class="t-head">';
     html+='<div></div>';
     sett.giorni.forEach(function(data,i){
-      var fest=getFestivita(data);
-      var num=data.split("-")[2];
-      html+='<div class="th-cell'+(fest?" festa":"")+'">';
-      html+=GIORNI[i].substring(0,3)+" "+parseInt(num);
-      if(fest) html+='<br><span style="font-size:7px">'+fest+'</span>';
+      var fest=getFest(data),num=parseInt(data.split("-")[2]);
+      var chiusura=(DATA.impostazioni.giorniChiusura||[]).indexOf(i)>=0;
+      html+='<div class="t-head-cell'+(fest?" festa":"")+(chiusura?" th-chiuso":"")+'">';
+      html+=GIORNI[i]+" "+num;
+      if(chiusura) html+='<br><span style="font-size:8px;letter-spacing:0">CHIUSO</span>';
+      else if(fest) html+='<br><span style="font-size:7px">'+fest+'</span>';
       html+='</div>';
     });
-    html+='<div class="th-cell">Ore</div>';
+    html+='<div class="t-head-cell">Ore</div>';
+    html+='</div>';
 
     // Righe dipendenti
-    DIPENDENTI.forEach(function(dip){
+    dips.forEach(function(dip){
       var ore=oreSettimana(dip.nome,sett.giorni);
-      html+='<div class="nome-cell">'+dip.nome+'<span class="ruolo-cell">'+dip.ruolo+'</span></div>';
+      html+='<div class="t-row">';
+      html+='<div class="dip-cell">'+dip.nome+'<span class="dip-ruolo">'+dip.ruolo+'</span></div>';
       sett.giorni.forEach(function(data,i){
         var t=getTurno(dip.nome,data);
-        var fest=getFestivita(data);
-        var cls="g-cell ",label="X";
-        if(t.tipo==="F"){cls+="g-fer";label="F";}
-        else if(t.tipo==="PE"){cls+="g-per";label="PE";}
-        else if(t.inizio&&t.fine){
-          if(t.gelateria){cls+="g-gel";label="🍦 "+t.inizio+"-"+t.fine;}
-          else if(parseInt(t.inizio)<14){cls+="g-mat";label=t.inizio+"-"+t.fine;}
-          else{cls+="g-pom";label=t.inizio+"-"+t.fine;}
+        var fest=getFest(data);
+        var chiusura=(DATA.impostazioni.giorniChiusura||[]).indexOf(i)>=0;
+        var cls="g-cell ",label="–";
+        if(!t){
+          if(chiusura) { cls+="g-chiuso"; label="—"; }
+          else cls+=fest?"g-festa":"g-x";
+        } else if(t.tipo==="F"){
+          cls+="g-fer";label="F";
+        } else if(t.tipo==="PE"){
+          cls+="g-per";label="PE"+(t.ore?'<br><small>'+t.ore+'h</small>':"");
+        } else if(t.tipo==="M"){
+          cls+="g-mal";label="M";
+        } else if(t.inizio&&t.fine){
+          // Determina colore dal turno configurato
+          var tc=turniConf.find(function(tc){return tc.inizio===t.inizio&&tc.fine===t.fine;});
+          if(tc) cls+="g-"+tc.colore;
+          else cls+="g-mat";
+          label=t.inizio+"<br>"+t.fine;
         }
-        else if(fest){cls+="g-festa";}
-        else{cls+="g-x";}
-        var safeDip=dip.nome.replace(/'/g,"\\'");
-        html+='<div class="'+cls+'" onclick="apriModal(\''+safeDip+'\',\''+data+'\')">'+label+'</div>';
+        var sd=dip.nome.replace(/'/g,"\\'");
+        html+='<div class="'+cls+'" onclick="apriModal(\''+sd+'\',\''+data+'\')" style="line-height:1.1">'+label+'</div>';
       });
-      var oreClass=ore>=39&&ore<=43?"ore-ok":ore>43?"ore-over":"";
-      html+='<div class="ore-cell '+oreClass+'">'+(ore>0?ore.toFixed(1):"–")+'</div>';
+      var oc=ore>=36&&ore<=42?"ore-ok":ore>42?"ore-over":"";
+      html+='<div class="ore-cell '+oc+'">'+(ore>0?ore.toFixed(1):"–")+'</div>';
+      html+='</div>';
     });
     html+='</div></div>';
   });
 
   // Legenda
-  html+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-family:DM Mono,monospace;font-size:10px">';
-  html+='<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px;font-weight:700">Mattino</span>';
-  html+='<span style="background:#fecaca;color:#991b1b;padding:2px 8px;border-radius:4px;font-weight:700">Pomeriggio</span>';
-  html+='<span style="background:#bfdbfe;color:#1e40af;padding:2px 8px;border-radius:4px;font-weight:700">Gelateria</span>';
-  html+='<span style="background:#fce7f3;color:#9d174d;padding:2px 8px;border-radius:4px;font-weight:700">F = Feria</span>';
-  html+='<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:4px;font-weight:700">PE = Permesso</span>';
+  html+='<div class="legenda">';
+  var legs=[["g-mat","Mattina"],["g-pom","Pomeriggio"],["g-t3","Turno 3"],
+    ["g-fer","F = Feria"],["g-per","PE = Permesso"],["g-mal","M = Malattia"]];
+  legs.forEach(function(l){
+    html+='<span class="leg-pill '+l[0]+'">'+l[1]+'</span>';
+  });
   html+='</div>';
 
-  G("view-mese").innerHTML=html;
+  G("v-mese").innerHTML=html;
+}
+
+// ── MODAL TURNO ───────────────────────────────────────────────────────────────
+function apriModal(nome,data){
+  editModal={nome:nome,data:data};
+  G("modal-nome").textContent=nome;
+  G("modal-data").textContent=data;
+
+  var imp=DATA.impostazioni;
+  var turniConf=imp.turni||[];
+  var t=getTurno(nome,data);
+  G("m-inizio").value=t&&t.inizio?t.inizio:"";
+  G("m-fine").value=t&&t.fine?t.fine:"";
+
+  // Genera bottoni quick
+  var html="";
+  // Turno 1 Mattina
+  if(turniConf[0]&&turniConf[0].inizio){
+    html+='<button class="q-btn q-mat" onclick="setQuick(\''+turniConf[0].inizio+'\',\''+turniConf[0].fine+'\')">'+turniConf[0].emoji+' '+turniConf[0].nome+'<br><small>'+turniConf[0].inizio+'–'+turniConf[0].fine+'</small></button>';
+  }
+  // Turno 2 Pomeriggio
+  if(turniConf[1]&&turniConf[1].inizio){
+    html+='<button class="q-btn q-pom" onclick="setQuick(\''+turniConf[1].inizio+'\',\''+turniConf[1].fine+'\')">'+turniConf[1].emoji+' '+turniConf[1].nome+'<br><small>'+turniConf[1].inizio+'–'+turniConf[1].fine+'</small></button>';
+  }
+  // Turno 3 opzionale
+  if(turniConf[2]&&turniConf[2].attivo&&turniConf[2].inizio){
+    html+='<button class="q-btn q-t3" onclick="setQuick(\''+turniConf[2].inizio+'\',\''+turniConf[2].fine+'\')">'+turniConf[2].emoji+' '+turniConf[2].nome+'<br><small>'+turniConf[2].inizio+'–'+turniConf[2].fine+'</small></button>';
+  }
+  html+='<button class="q-btn q-fer" onclick="setSpeciale(\'F\')">🏖️ Feria</button>';
+  html+='<button class="q-btn q-mal" onclick="setSpeciale(\'M\')">🤒 Malattia</button>';
+  html+='<button class="q-btn q-del" onclick="setSpeciale(\'X\')">✕ Rimuovi turno</button>';
+  G("quick-grid").innerHTML=html;
+
+  G("modal-turno").classList.add("open");
+}
+function chiudiModal(){G("modal-turno").classList.remove("open");editModal=null;}
+function setQuick(ini,fin){
+  if(!editModal)return;
+  DATA.turni[editModal.nome+"|"+editModal.data]={inizio:ini,fine:fin};
+  saveData(DATA);
+  chiudiModal();renderMese();
+}
+function apriPermessoOre(){
+  chiudiModal();
+  G("pe-data").textContent=editModal?editModal.nome+" · "+editModal.data:"";
+  G("modal-pe").classList.add("open");
+}
+function chiudiModalPe(){G("modal-pe").classList.remove("open");}
+function salvaPermessoOre(ore){
+  if(!editModal||!ore||ore<=0){alert("Inserisci ore valide");return;}
+  DATA.turni[editModal.nome+"|"+editModal.data]={tipo:"PE",ore:ore};
+  saveData(DATA);
+  chiudiModalPe();renderMese();
+}
+
+function setSpeciale(tipo){
+  if(!editModal)return;
+  var key=editModal.nome+"|"+editModal.data;
+  if(tipo==="X"){delete DATA.turni[key];}
+  else{DATA.turni[key]={tipo:tipo};}
+  saveData(DATA);
+  chiudiModal();renderMese();
+}
+function salvaCustom(){
+  if(!editModal)return;
+  var ini=G("m-inizio").value,fin=G("m-fine").value;
+  if(!ini||!fin){alert("Inserisci orario inizio e fine");return;}
+  DATA.turni[editModal.nome+"|"+editModal.data]={inizio:ini,fine:fin};
+  saveData(DATA);
+  chiudiModal();renderMese();
+}
+
+// ── FERIE ────────────────────────────────────────────────────────────────────
+function setVistaFerie(){
+  if(!IS_PRO){G("modal-pro").classList.add("open");return;}
+  setVista("ferie");
+}
+function chiudiModalPro(){G("modal-pro").classList.remove("open");}
+
+function calcFerie(nome){
+  var dr=new Date(DATA.dataRiferimento||new Date());
+  var ay=dr.getFullYear()-(dr.getMonth()>=6?0:1);
+  var ai=new Date(ay,6,1);
+  var sett=Math.max(0,Math.floor((new Date()-ai)/(1000*60*60*24*7)));
+  var mat=sett*0.5;
+  var ini=DATA.ferie[nome]&&DATA.ferie[nome].residuoIniziale!=null?DATA.ferie[nome].residuoIniziale:26;
+  var us=DATA.ferie[nome]&&DATA.ferie[nome].utilizzate!=null?DATA.ferie[nome].utilizzate:0;
+  return ini-us+mat;
+}
+function calcPermessi(nome){
+  var dr=new Date(DATA.dataRiferimento||new Date());
+  var ay=dr.getFullYear()-(dr.getMonth()>=6?0:1);
+  var ai=new Date(ay,6,1);
+  var sett=Math.max(0,Math.floor((new Date()-ai)/(1000*60*60*24*7)));
+  var mat=sett*0.615;
+  var ini=DATA.permessi[nome]&&DATA.permessi[nome].residuoIniziale!=null?DATA.permessi[nome].residuoIniziale:32;
+  var us=DATA.permessi[nome]&&DATA.permessi[nome].utilizzati!=null?DATA.permessi[nome].utilizzati:0;
+  return ini-us+mat;
+}
+
+
+function calcPermessiDaStorico(nome){
+  // Calcola ore permesso totali dall'anno corrente (luglio-giugno)
+  var storico=DATA["permessi_storico_"+nome]||[];
+  var oggi=new Date();
+  var annoRef=oggi.getMonth()>=6?oggi.getFullYear():oggi.getFullYear()-1;
+  var inizioAnno=new Date(annoRef,6,1); // 1 luglio
+  return storico.reduce(function(s,p){
+    var parts=(p.data||"").split("/");
+    if(parts.length===3){
+      var d=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+      if(d>=inizioAnno) return s+(p.ore||0);
+    }
+    return s;
+  },0);
+}
+function calcPermessiMese(nome,anno,mese){
+  // Calcola ore permesso per un mese specifico
+  var storico=DATA["permessi_storico_"+nome]||[];
+  return storico.reduce(function(s,p){
+    var parts=(p.data||"").split("/");
+    if(parts.length===3){
+      if(parseInt(parts[2])===anno&&parseInt(parts[1])-1===mese)
+        return s+(p.ore||0);
+    }
+    return s;
+  },0);
 }
 
 function renderFerie(){
-  var html='<div style="font-family:DM Mono,monospace;font-size:10px;color:#9ca3af;margin-bottom:14px;padding:10px;background:#f9fafb;border-radius:8px">';
-  html+='Data riferimento: <input type="date" value="'+dataRiferimento+'" onchange="aggiornaDR(this.value)" style="border:1.5px solid #e5e7eb;border-radius:6px;padding:4px 8px;font-family:DM Mono,monospace;font-size:11px;outline:none;color:#111827">';
-  html+='</div>';
-
-  DIPENDENTI.forEach(function(dip){
+  var dips=DATA.impostazioni.dipendenti||[];
+  var html='<div style="background:#f5f3ff;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-family:DM Mono,monospace;font-size:11px;color:#5b21b6;display:flex;align-items:center;gap:8px">⭐ Versione Pro attiva — Ferie e permessi sbloccati</div>';
+  dips.forEach(function(dip){
     var rf=calcFerie(dip.nome),rp=calcPermessi(dip.nome);
-    var cfClass=rf>5?"ok":rf>0?"warn":"neg";
-    var cpClass=rp>5?"ok":rp>0?"warn":"neg";
-    var fi=ferie[dip.nome]&&ferie[dip.nome].residuoIniziale!=null?ferie[dip.nome].residuoIniziale:26;
-    var fu=ferie[dip.nome]&&ferie[dip.nome].utilizzate!=null?ferie[dip.nome].utilizzate:0;
-    var pi=permessi[dip.nome]&&permessi[dip.nome].residuoIniziale!=null?permessi[dip.nome].residuoIniziale:32;
-    var pu=permessi[dip.nome]&&permessi[dip.nome].utilizzati!=null?permessi[dip.nome].utilizzati:0;
-    var safeDip=dip.nome.replace(/'/g,"\\'");
-
+    var fi=DATA.ferie[dip.nome]&&DATA.ferie[dip.nome].residuoIniziale!=null?DATA.ferie[dip.nome].residuoIniziale:26;
+    var fu=DATA.ferie[dip.nome]&&DATA.ferie[dip.nome].utilizzate!=null?DATA.ferie[dip.nome].utilizzate:0;
+    var pi=DATA.permessi[dip.nome]&&DATA.permessi[dip.nome].residuoIniziale!=null?DATA.permessi[dip.nome].residuoIniziale:32;
+    var pu=calcPermessiDaStorico(dip.nome);
+    var cfClass=rf>5?"res-ok":rf>0?"res-warn":"res-neg";
+    var cpClass=rp>5?"res-ok":rp>0?"res-warn":"res-neg";
+    var sn=dip.nome.replace(/'/g,"\\'");
     html+='<div class="ferie-card">';
-    html+='<div class="ferie-nome">'+dip.nome+'</div>';
-    html+='<div class="ferie-ruolo">'+dip.ruolo+'</div>';
-    html+='<div class="ferie-grid">';
-
-    // FERIE
-    html+='<div class="ferie-block">';
-    html+='<div class="ferie-block-title">🏖️ Ferie (gg)</div>';
-    html+='<div class="ferie-row"><span class="ferie-label">Residuo iniziale</span>';
-    html+='<input class="ferie-input" type="number" step="0.5" value="'+fi+'" onchange="aggiornaFerie(\''+safeDip+'\',\'residuoIniziale\',this.value)"></div>';
-    html+='<div class="ferie-row"><span class="ferie-label">Utilizzate</span>';
-    html+='<input class="ferie-input" type="number" step="0.5" value="'+fu+'" onchange="aggiornaFerie(\''+safeDip+'\',\'utilizzate\',this.value)"></div>';
-    html+='<div class="ferie-residuo '+cfClass+'">'+rf.toFixed(1)+' gg rimanenti</div>';
+    // Header card con nome e bottone Permessi
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+    html+='<div><div class="ferie-nome">'+dip.nome+'</div><div class="ferie-ruolo">'+dip.ruolo+'</div></div>';
+    html+='<button onclick="apriPermessiSettimana(\''+sn+'\')" style="padding:7px 14px;border:none;border-radius:8px;background:#dbeafe;color:#1d4ed8;font-weight:700;cursor:pointer;font-family:Bricolage Grotesque,sans-serif;font-size:12px">📋 + Permesso</button>';
     html+='</div>';
-
-    // PERMESSI
-    html+='<div class="ferie-block">';
-    html+='<div class="ferie-block-title">📋 Permessi (h)</div>';
-    html+='<div class="ferie-row"><span class="ferie-label">Residuo iniziale</span>';
-    html+='<input class="ferie-input" type="number" step="0.5" value="'+pi+'" onchange="aggiornaPermessi(\''+safeDip+'\',\'residuoIniziale\',this.value)"></div>';
-    html+='<div class="ferie-row"><span class="ferie-label">Utilizzati</span>';
-    html+='<input class="ferie-input" type="number" step="0.5" value="'+pu+'" onchange="aggiornaPermessi(\''+safeDip+'\',\'utilizzati\',this.value)"></div>';
-    html+='<div class="ferie-residuo '+cpClass+'">'+rp.toFixed(1)+' h rimanenti</div>';
+    html+='<div class="ferie-griglia">';
+    // Ferie
+    html+='<div class="ferie-block"><div class="ferie-block-title">🏖️ Ferie (gg)</div>';
+    html+='<div class="ferie-row"><span>Residuo iniz.</span><input class="ferie-inp" type="number" step="0.5" value="'+fi+'" oninput="saveFerieDip(\''+sn+'\',\'residuoIniziale\',this.value)"></div>';
+    html+='<div class="ferie-row"><span>Utilizzate</span><input class="ferie-inp" type="number" step="0.5" value="'+fu+'" oninput="saveFerieDip(\''+sn+'\',\'utilizzate\',this.value)"></div>';
+    html+='<div class="ferie-residuo '+cfClass+'">'+rf.toFixed(1)+' gg rimasti</div></div>';
+    // Permessi
+    html+='<div class="ferie-block"><div class="ferie-block-title">📋 Permessi (h)</div>';
+    html+='<div class="ferie-row"><span>Totale annuo</span><input class="ferie-inp" type="number" step="0.5" value="'+pi+'" oninput="savePermDip(\''+sn+'\',\'residuoIniziale\',this.value)"></div>';
+    html+='<div class="ferie-row"><span>Usate anno</span><span style="font-weight:700;color:#1d4ed8">'+pu.toFixed(1)+'h (da storico)</span></div>';
+    html+='<div class="ferie-residuo '+cpClass+'">'+rp.toFixed(1)+' h rimaste</div></div>';
     html+='</div>';
-
-    html+='</div></div>';
+    // Storico permessi settimanali
+    var storicoKey="permessi_storico_"+dip.nome;
+    var storico=DATA[storicoKey]||[];
+    if(storico.length>0){
+      html+='<div style="margin-top:10px;border-top:1px solid #f3f4f6;padding-top:8px">';
+      html+='<div style="font-family:DM Mono,monospace;font-size:9px;color:#9ca3af;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Storico permessi</div>';
+      storico.slice().reverse().forEach(function(s,si){
+        var idx=storico.length-1-si;
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f9fafb;font-size:12px">';
+        html+='<span style="color:#6b7280;font-family:DM Mono,monospace">'+s.data+'</span>';
+        html+='<span style="font-weight:700;color:#1d4ed8">'+s.ore+'h</span>';
+        html+='<span style="color:#9ca3af;font-size:11px">'+(s.nota||"")+'</span>';
+        html+='<button onclick="rmPermesso(\''+sn+'\','+idx+')" style="padding:2px 8px;border:1px solid #fca5a5;border-radius:6px;background:#fef2f2;color:#ef4444;cursor:pointer;font-size:11px">✕</button>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+    html+='</div>';
   });
-
-  G("view-ferie").innerHTML=html;
+  G("v-ferie").innerHTML=html;
 }
 
-// ── AZIONI ────────────────────────────────────────────────────────────────────
+var permModalDip=null;
+function apriPermessiSettimana(nome){
+  permModalDip=nome;
+  G("perm-modal-nome").textContent=nome;
+  G("perm-ore").value="";
+  G("perm-nota").value="";
+  G("modal-perm").classList.add("open");
+}
+function chiudiModalPerm(){G("modal-perm").classList.remove("open");permModalDip=null;}
+function salvaPermessoSettimana(){
+  var ore=parseFloat(G("perm-ore").value);
+  if(!ore||ore<=0){alert("Inserisci le ore di permesso");return;}
+  var nota=G("perm-nota").value.trim();
+  var oggi=new Date();
+  var data=oggi.getDate()+"/"+(oggi.getMonth()+1)+"/"+oggi.getFullYear();
+  var key="permessi_storico_"+permModalDip;
+  if(!DATA[key]) DATA[key]=[];
+  DATA[key].push({data:data,ore:ore,nota:nota});
+  // Il totale viene calcolato automaticamente dallo storico
+  saveData(DATA);
+  chiudiModalPerm();
+  renderFerie();
+}
+function rmPermesso(nome,idx){
+  var key="permessi_storico_"+nome;
+  if(!DATA[key]) return;
+  var ore=DATA[key][idx]?DATA[key][idx].ore:0;
+  DATA[key].splice(idx,1);
+  // Il totale viene ricalcolato automaticamente dallo storico
+  saveData(DATA);
+  renderFerie();
+}
+
+function saveFerieDip(nome,campo,val){
+  if(!DATA.ferie[nome])DATA.ferie[nome]={};
+  DATA.ferie[nome][campo]=parseFloat(val)||0;
+  saveData(DATA);
+}
+function savePermDip(nome,campo,val){
+  if(!DATA.permessi[nome])DATA.permessi[nome]={};
+  DATA.permessi[nome][campo]=parseFloat(val)||0;
+  saveData(DATA);
+}
+
+// ── IMPOSTAZIONI ─────────────────────────────────────────────────────────────
+function renderImpostazioni(){
+  var imp=DATA.impostazioni;
+  var dips=imp.dipendenti||[];
+  var turniConf=imp.turni||[];
+  var atLimit=!IS_PRO&&dips.length>=FREE_LIMIT;
+
+  var html='';
+
+  // Attività
+  html+='<div class="sett-section">';
+  html+='<div class="sett-title">🏪 La tua attività</div>';
+  html+='<span class="inp-label">Nome attività</span>';
+  html+='<input class="inp-field" type="text" id="inp-nome" value="'+imp.nomeAttivita+'" placeholder="Es: Panificio Rossi, Pizzeria Da Mario...">';
+  html+='<span class="inp-label">Password accesso</span>';
+  html+='<input class="inp-field" type="password" id="inp-pwd" value="'+imp.password+'" placeholder="Password per il team">';
+  html+='</div>';
+
+  // Turni
+  html+='<div class="sett-section">';
+  html+='<div class="sett-title">⏰ Configurazione turni</div>';
+  var turnoNames=["Mattina","Pomeriggio","Turno 3 (opzionale)"];
+  var turnoEmoji=["🟢","🔴","🔵"];
+  var turnoColors=["mat","pom","t3"];
+  for(var i=0;i<3;i++){
+    var tc=turniConf[i]||{nome:"",inizio:"",fine:"",attivo:false};
+    html+='<div class="turno-conf">';
+    html+='<div class="turno-conf-title">'+turnoEmoji[i]+' '+turnoNames[i];
+    if(i===2) html+=' <input type="checkbox" id="t3-attivo" '+(tc.attivo?"checked":"")+'  onchange="toggleT3(this.checked)" style="margin-left:8px"> Attivo';
+    html+='</div>';
+    var disabled=(i===2&&!tc.attivo)?"disabled":"";
+    html+='<span class="inp-label">Nome turno</span>';
+    html+='<input class="inp-field" type="text" id="t'+i+'-nome" value="'+tc.nome+'" placeholder="'+turnoNames[i]+'" '+disabled+' style="opacity:'+(i===2&&!tc.attivo?'.4':'1')+'">';
+    html+='<div class="turno-time-row">';
+    html+='<div style="flex:1"><span class="inp-label">Inizio</span><input class="turno-time-inp" type="time" id="t'+i+'-ini" value="'+tc.inizio+'" '+disabled+'></div>';
+    html+='<div style="padding:20px 8px 0;color:#9ca3af;font-family:DM Mono,monospace">→</div>';
+    html+='<div style="flex:1"><span class="inp-label">Fine</span><input class="turno-time-inp" type="time" id="t'+i+'-fin" value="'+tc.fine+'" '+disabled+'></div>';
+    html+='</div></div>';
+  }
+  html+='</div>';
+
+  // CCNL
+  html+='<div class="sett-section">';
+  html+='<div class="sett-title">📋 Contratto applicato (CCNL)</div>';
+  html+='<p style="font-size:12px;color:#9ca3af;font-family:DM Mono,monospace;margin-bottom:12px">Il CCNL determina le maggiorazioni nel PDF per il commercialista</p>';
+  var ccnlOpts=[
+    {val:"pubblici_esercizi", label:"🍸 Pubblici Esercizi / Bar / Caffetterie (FIPE 2024)", desc:"Dom +20% · Fest +60% · Straord +25%/+35% · Nott +60%"},
+    {val:"panificatori", label:"🍞 Panificatori Artigiani (E023 2024)", desc:"Dom +30% · Straord +20%/+30% · Nott +30%"},
+    {val:"alimentari", label:"🎂 Alimentari / Pasticcerie Artigiane (<15 dip)", desc:"Dom +10% · Fest +40% · Straord +30% · Nott +30%"},
+    {val:"personalizzato", label:"⚙️ Personalizzato (inserisci % manualmente)", desc:"Imposta le tue maggiorazioni"},
+  ];
+  var ccnlCorrente=DATA.impostazioni.ccnl||"pubblici_esercizi";
+  ccnlOpts.forEach(function(opt){
+    var sel=ccnlCorrente===opt.val;
+    html+='<div onclick="setCCNL(\''+opt.val+'\")" style="padding:12px 14px;border-radius:10px;border:2px solid '+(sel?'#7c3aed':'#e5e7eb')+';background:'+(sel?'#f5f3ff':'#fff')+';cursor:pointer;margin-bottom:8px">';
+    html+='<div style="font-weight:700;font-size:13px;color:'+(sel?'#5b21b6':'#111827')+'">'+opt.label+'</div>';
+    html+='<div style="font-family:DM Mono,monospace;font-size:10px;color:'+(sel?'#7c3aed':'#9ca3af')+';margin-top:3px">'+opt.desc+'</div>';
+    html+='</div>';
+  });
+  // Campi personalizzati
+  if(ccnlCorrente==="personalizzato"){
+    var cp=DATA.impostazioni.ccnlPersonalizzato||{domPerc:20,festPerc:60,strOrd:25,strExtra:35,nott:60};
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">';
+    html+='<div><span class="inp-label">% Domenicale</span><input class="inp-field" type="number" value="'+cp.domPerc+'" oninput="setCCNLCustom(\'domPerc\',this.value)"></div>';
+    html+='<div><span class="inp-label">% Festivo</span><input class="inp-field" type="number" value="'+cp.festPerc+'" oninput="setCCNLCustom(\'festPerc\',this.value)"></div>';
+    html+='<div><span class="inp-label">% Straord. ordinario</span><input class="inp-field" type="number" value="'+cp.strOrd+'" oninput="setCCNLCustom(\'strOrd\',this.value)"></div>';
+    html+='<div><span class="inp-label">% Straord. aggiuntivo</span><input class="inp-field" type="number" value="'+cp.strExtra+'" oninput="setCCNLCustom(\'strExtra\',this.value)"></div>';
+    html+='<div><span class="inp-label">% Notturno</span><input class="inp-field" type="number" value="'+cp.nott+'" oninput="setCCNLCustom(\'nott\',this.value)"></div>';
+    html+='</div>';
+  }
+  html+='</div>';
+
+  // Giorni chiusura
+  html+='<div class="sett-section">';
+  html+='<div class="sett-title">🔒 Giorni di chiusura settimanale</div>';
+  html+='<p style="font-size:12px;color:#9ca3af;font-family:DM Mono,monospace;margin-bottom:12px">Seleziona i giorni in cui la tua attività è chiusa</p>';
+  html+='<div style="display:flex;flex-wrap:wrap;gap:8px">';
+  var giorniNomi=["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
+  var gc=DATA.impostazioni.giorniChiusura||[];
+  giorniNomi.forEach(function(g,i){
+    var isChiuso=gc.indexOf(i)>=0;
+    html+='<button onclick="toggleChiusura('+i+')" style="padding:8px 14px;border-radius:8px;border:2px solid '+(isChiuso?'#94a3b8':'#e5e7eb')+';background:'+(isChiuso?'#f1f5f9':'#fff')+';color:'+(isChiuso?'#64748b':'#111827')+';font-weight:700;cursor:pointer;font-family:Bricolage Grotesque,sans-serif;font-size:13px">'+(isChiuso?'🔒 ':'')+g+'</button>';
+  });
+  html+='</div></div>';
+  html+='<div class="sett-title">👥 Dipendenti</div>';
+  if(!IS_PRO) html+='<div class="free-limit-warn">⚠️ Versione Free — max '+FREE_LIMIT+' dipendenti · <a href="#" onclick="G(\'modal-pro\').classList.add(\'open\')" style="color:#7c3aed">Passa a Pro →</a></div>';
+  html+='<div class="dip-list" id="dip-list">';
+  dips.forEach(function(d,i){
+    html+='<div class="dip-row" id="dip-row-'+i+'">';
+    html+='<input class="dip-inp" type="text" value="'+d.nome+'" placeholder="Nome" oninput="updateDip('+i+',\'nome\',this.value)">';
+    html+='<input class="dip-ruolo-inp" type="text" value="'+d.ruolo+'" placeholder="Ruolo" oninput="updateDip('+i+',\'ruolo\',this.value)">';
+    html+='<input type="number" min="1" max="60" value="'+(d.oreContratto||40)+'" placeholder="h/sett" title="Ore contrattuali settimanali" oninput="updateDip('+i+',\'oreContratto\',parseInt(this.value)||40)" style="width:70px;border:1.5px solid #e5e7eb;border-radius:8px;padding:9px 6px;font-family:DM Mono,monospace;font-size:12px;text-align:center;outline:none">';
+    html+='<span style="font-family:DM Mono,monospace;font-size:10px;color:#9ca3af">h/sett</span>';
+    html+='<button class="btn-rm-dip" onclick="removeDip('+i+')">✕</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  if(!atLimit){
+    html+='<button class="btn-add-dip" onclick="addDip()">+ Aggiungi dipendente</button>';
+  } else {
+    html+='<button class="btn-add-dip" style="color:#7c3aed;border-color:#c4b5fd" onclick="G(\'modal-pro\').classList.add(\'open\')">⭐ Sblocca altri dipendenti con Pro</button>';
+  }
+  html+='</div>';
+
+  // Salva
+  html+='<button class="btn-salva-sett" onclick="salvaImpostazioni()">✓ Salva impostazioni</button>';
+  html+='<div style="height:30px"></div>';
+
+  G("v-impostazioni").innerHTML=html;
+}
+
+function toggleChiusura(i){
+  var gc=DATA.impostazioni.giorniChiusura||[];
+  var idx=gc.indexOf(i);
+  if(idx>=0) gc.splice(idx,1);
+  else gc.push(i);
+  DATA.impostazioni.giorniChiusura=gc;
+  saveData(DATA);
+  renderImpostazioni();
+}
+
+function toggleT3(checked){
+  DATA.impostazioni.turni[2].attivo=checked;
+  saveData(DATA);
+  renderImpostazioni();
+}
+function updateDip(i,campo,val){
+  DATA.impostazioni.dipendenti[i][campo]=val;
+}
+function addDip(){
+  DATA.impostazioni.dipendenti.push({nome:"",ruolo:""});
+  saveData(DATA);
+  renderImpostazioni();
+}
+function removeDip(i){
+  DATA.impostazioni.dipendenti.splice(i,1);
+  saveData(DATA);
+  renderImpostazioni();
+}
+function salvaImpostazioni(){
+  DATA.impostazioni.nomeAttivita=G("inp-nome").value.trim();
+  DATA.impostazioni.password=G("inp-pwd").value||"workmor2024";
+  for(var i=0;i<3;i++){
+    DATA.impostazioni.turni[i].nome=G("t"+i+"-nome").value||DATA.impostazioni.turni[i].nome;
+    DATA.impostazioni.turni[i].inizio=G("t"+i+"-ini").value||"";
+    DATA.impostazioni.turni[i].fine=G("t"+i+"-fin").value||"";
+  }
+  if(!DATA.impostazioni.giorniChiusura) DATA.impostazioni.giorniChiusura=[];
+  saveData(DATA);
+  G("hdr-attivita").textContent=DATA.impostazioni.nomeAttivita||"La mia attività";
+  alert("✓ Impostazioni salvate!");
+}
+
+
+// ── CCNL ─────────────────────────────────────────────────────────────────────
+function setCCNL(val){
+  DATA.impostazioni.ccnl=val;
+  saveData(DATA);
+  renderImpostazioni();
+}
+function setCCNLCustom(campo,val){
+  if(!DATA.impostazioni.ccnlPersonalizzato) DATA.impostazioni.ccnlPersonalizzato={};
+  DATA.impostazioni.ccnlPersonalizzato[campo]=parseFloat(val)||0;
+  saveData(DATA);
+}
+function getCCNLInfo(){
+  var ccnl=DATA.impostazioni.ccnl||"pubblici_esercizi";
+  var configs={
+    pubblici_esercizi:{
+      nome:"CCNL Pubblici Esercizi / Bar / Caffetterie (FIPE 2024)",
+      domPerc:20, festPerc:60, strOrd:25, strExtra:35, nott:60,
+      ferieDays:26, oreSett:40
+    },
+    panificatori:{
+      nome:"CCNL Panificatori Artigiani (E023 2024)",
+      domPerc:30, festPerc:40, strOrd:20, strExtra:30, nott:30,
+      ferieDays:26, oreSett:40
+    },
+    alimentari:{
+      nome:"CCNL Alimentari / Pasticcerie Artigiane",
+      domPerc:10, festPerc:40, strOrd:30, strExtra:50, nott:30,
+      ferieDays:26, oreSett:40
+    },
+    personalizzato:{
+      nome:"CCNL Personalizzato",
+      ...(DATA.impostazioni.ccnlPersonalizzato||{domPerc:20,festPerc:60,strOrd:25,strExtra:35,nott:60}),
+      ferieDays:26, oreSett:40
+    }
+  };
+  return configs[ccnl]||configs.pubblici_esercizi;
+}
+
+// ── GENERA PDF ───────────────────────────────────────────────────────────────
+function generaPDF(){
+  if(!window.jspdf){alert("Libreria PDF non caricata. Controlla la connessione internet.");return;}
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+
+  var imp = DATA.impostazioni;
+  var dips = imp.dipendenti||[];
+  var meseLbl = meseAttuale.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+  var nomeAtt = imp.nomeAttivita||"La mia attività";
+  var ccnl = getCCNLInfo();
+
+  // Ottieni tutti i giorni del mese
+  var anno = meseAttuale.getFullYear();
+  var mese = meseAttuale.getMonth();
+  var giorniMese = new Date(anno,mese+1,0).getDate();
+  var giorni = [];
+  for(var i=1;i<=giorniMese;i++){
+    var d = new Date(anno,mese,i);
+    giorni.push({data:fmtData(d),giorno:d.getDay(),num:i});
+  }
+
+  // Festività
+  var festSet = new Set();
+  giorni.forEach(function(g){
+    if(getFest(g.data)) festSet.add(g.data);
+  });
+
+  // ── Per ogni dipendente calcola ore ──────────────────────────────────────
+  var righe = [];
+  dips.forEach(function(dip){
+    var oreOrd=0,oreDom=0,oreFest=0,oreStr=0,ferieGg=0,malattiaDays=0,permOre=0;
+    var oreSettimanali={};
+
+    // Leggi permessi dallo storico per il mese corrente
+    permOre=calcPermessiMese(dip.nome,anno,mese);
+
+    giorni.forEach(function(g){
+      var t = getTurno(dip.nome,g.data);
+      if(!t) return;
+
+      // Calcola ore turno
+      var ore=0;
+      if(t.inizio&&t.fine){
+        var h1=parseInt(t.inizio),m1=parseInt(t.inizio.split(":")[1]||0);
+        var h2=parseInt(t.fine),m2=parseInt(t.fine.split(":")[1]||0);
+        ore=((h2*60+m2)-(h1*60+m1))/60;
+      }
+
+      if(t.tipo==="F"){ferieGg++;return;}
+      if(t.tipo==="M"){malattiaDays++;return;}
+      if(t.tipo==="PE"){permOre+=(t.ore||0);return;}
+
+      if(ore<=0) return;
+
+      // Settimana ISO per calcolo straordinario
+      var settKey = getISOWeek(new Date(anno,mese,g.num));
+      if(!oreSettimanali[settKey]) oreSettimanali[settKey]=0;
+      oreSettimanali[settKey]+=ore;
+
+      var isFest = festSet.has(g.data);
+      var isDom = g.giorno===0;
+
+      if(isFest){
+        oreFest+=ore;
+      } else if(isDom){
+        oreDom+=ore;
+      } else {
+        oreOrd+=ore;
+      }
+    });
+
+    // Calcola straordinario (ore oltre contratto settimanale)
+    var contratto = dip.oreContratto||40;
+    Object.values(oreSettimanali).forEach(function(tot){
+      if(tot>contratto) oreStr+=(tot-contratto);
+    });
+
+    righe.push([
+      dip.nome,
+      dip.ruolo,
+      contratto+"h",
+      oreOrd.toFixed(1)+"h",
+      oreDom.toFixed(1)+"h",
+      oreFest.toFixed(1)+"h",
+      oreStr.toFixed(1)+"h",
+      ferieGg>0?ferieGg+"gg":"-",
+      malattiaDays>0?malattiaDays+"gg":"-",
+      permOre>0?permOre+"h":"-",
+      (oreOrd+oreDom+oreFest+oreStr).toFixed(1)+"h"
+    ]);
+  });
+
+  // ── Layout PDF ────────────────────────────────────────────────────────────
+  // Header
+  doc.setFillColor(17,24,39);
+  doc.rect(0,0,297,22,"F");
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(14);doc.setFont("helvetica","bold");
+  doc.text("WorkMor · Riepilogo Turni",10,10);
+  doc.setFontSize(10);doc.setFont("helvetica","normal");
+  doc.text(nomeAtt+" · "+meseLbl,10,17);
+  doc.setTextColor(200,200,200);
+  doc.text("Generato il "+new Date().toLocaleDateString("it-IT"),200,10);
+  doc.text("Per uso interno · Da consegnare al commercialista",200,17);
+
+  // Legenda maggiorazioni
+  doc.setTextColor(17,24,39);
+  doc.setFontSize(8);doc.setFont("helvetica","normal");
+  doc.text(ccnl.nome+": Dom +"+ccnl.domPerc+"% · Fest +"+ccnl.festPerc+"% · Straord +"+ccnl.strOrd+"%/+"+ccnl.strExtra+"% · Nott +"+ccnl.nott+"%",10,28);
+
+  // Tabella
+  doc.autoTable({
+    startY:32,
+    head:[[
+      "Dipendente","Ruolo","H/Sett",
+      "Ore Ordinarie","Ore Domenicali","Ore Festive","Ore Straordinarie",
+      "Ferie","Malattia","Permessi","TOT ORE"
+    ]],
+    body:righe,
+    styles:{fontSize:9,cellPadding:3,font:"helvetica"},
+    headStyles:{fillColor:[17,24,39],textColor:[255,255,255],fontStyle:"bold",fontSize:9},
+    alternateRowStyles:{fillColor:[249,250,251]},
+    columnStyles:{
+      0:{fontStyle:"bold"},
+      3:{fillColor:[220,252,231],textColor:[22,101,52]},
+      4:{fillColor:[219,234,254],textColor:[30,64,175]},
+      5:{fillColor:[254,243,199],textColor:[146,64,14]},
+      6:{fillColor:[254,202,202],textColor:[153,27,27]},
+      10:{fontStyle:"bold",fillColor:[243,244,246]}
+    },
+    margin:{left:10,right:10},
+    didDrawPage:function(data){
+      // Footer
+      doc.setFontSize(7);doc.setTextColor(150,150,150);
+      doc.text("WorkMor.app · Gestione Turni Pro · "+nomeAtt,10,doc.internal.pageSize.height-5);
+      doc.text("Pag. "+data.pageNumber,270,doc.internal.pageSize.height-5);
+    }
+  });
+
+  // Nota finale
+  var finalY = doc.lastAutoTable.finalY+8;
+  if(finalY<180){
+    doc.setFillColor(245,243,255);
+    doc.roundedRect(10,finalY,277,16,2,2,"F");
+    doc.setTextColor(91,33,182);doc.setFontSize(8);doc.setFont("helvetica","bold");
+    doc.text("NOTE PER IL COMMERCIALISTA:",13,finalY+6);
+    doc.setFont("helvetica","normal");
+    doc.text("Le ore straordinarie sono calcolate sulle ore contrattuali settimanali di ciascun dipendente. "+ccnl.nome+". Festività nazionali incluse.",13,finalY+12);
+  }
+
+  var nome = nomeAtt.replace(/\s+/g,"-").toLowerCase();
+  doc.save("workmor-turni-"+nome+"-"+meseLbl.replace(/\s/g,"-")+".pdf");
+}
+
+function getISOWeek(d){
+  var date=new Date(d);
+  date.setHours(0,0,0,0);
+  date.setDate(date.getDate()+3-(date.getDay()+6)%7);
+  var week1=new Date(date.getFullYear(),0,4);
+  return 1+Math.round(((date.getTime()-week1.getTime())/86400000-3+(week1.getDay()+6)%7)/7);
+}
+
+// ── NAVIGAZIONE ───────────────────────────────────────────────────────────────
 function cambiaMese(d){
   meseAttuale=new Date(meseAttuale.getFullYear(),meseAttuale.getMonth()+d,1);
   renderMese();
 }
-
 function setVista(v){
   vista=v;
-  G("view-mese").style.display=v==="mese"?"block":"none";
-  G("view-ferie").style.display=v==="ferie"?"block":"none";
-  G("btn-mese").className="nav-btn "+(v==="mese"?"active":"inactive");
-  G("btn-ferie").className="nav-btn "+(v==="ferie"?"active":"inactive");
-  render();
-}
-
-function apriModal(nome,data){
-  editModal={nome:nome,data:data,turno:getTurno(nome,data)};
-  G("modal-title").textContent=nome+" · "+data;
-  var t=editModal.turno;
-  G("m-inizio").value=t.inizio||"07:00";
-  G("m-fine").value=t.fine||"14:00";
-  G("m-gel").checked=!!t.gelateria;
-  G("modal").classList.add("open");
-}
-function chiudiModal(e){
-  if(!e||e.target===G("modal")){G("modal").classList.remove("open");editModal=null;}
-}
-function setQuick(ini,fin,gel){
-  if(!editModal) return;
-  var key=editModal.nome+"|"+editModal.data;
-  var nt={...turni};
-  nt[key]={inizio:ini,fine:fin,gelateria:gel};
-  turni=nt;
-  salva({turni:nt});
-  G("modal").classList.remove("open");editModal=null;
-  render();
-}
-function setSpeciale(tipo){
-  if(!editModal) return;
-  var key=editModal.nome+"|"+editModal.data;
-  var nt={...turni};
-  if(tipo==="X"){delete nt[key];}
-  else{nt[key]={tipo:tipo};}
-  turni=nt;
-  salva({turni:nt});
-  G("modal").classList.remove("open");editModal=null;
-  render();
-}
-function salvaCustom(){
-  if(!editModal) return;
-  var ini=G("m-inizio").value,fin=G("m-fine").value,gel=G("m-gel").checked;
-  var key=editModal.nome+"|"+editModal.data;
-  var nt={...turni};
-  nt[key]={inizio:ini,fine:fin,gelateria:gel};
-  turni=nt;
-  salva({turni:nt});
-  G("modal").classList.remove("open");editModal=null;
-  render();
-}
-function aggiornaFerie(nome,campo,val){
-  var nf={...ferie};
-  if(!nf[nome]) nf[nome]={};
-  nf[nome][campo]=parseFloat(val)||0;
-  ferie=nf;
-  salva({ferie:nf});
-}
-function aggiornaPermessi(nome,campo,val){
-  var np={...permessi};
-  if(!np[nome]) np[nome]={};
-  np[nome][campo]=parseFloat(val)||0;
-  permessi=np;
-  salva({permessi:np});
-}
-function aggiornaDR(val){
-  dataRiferimento=val;
-  salva({dataRiferimento:val});
-  renderFerie();
+  G("v-mese").style.display=v==="mese"?"block":"none";
+  G("v-ferie").style.display=v==="ferie"?"block":"none";
+  G("v-impostazioni").style.display=v==="impostazioni"?"block":"none";
+  G("btn-mese").className="nb "+(v==="mese"?"on":"off");
+  G("btn-ferie").className="nb "+(v==="ferie"?"on":IS_PRO?"off":"off pro-locked");
+  G("btn-sett").className="nb "+(v==="impostazioni"?"on":"off");
+  if(v==="ferie") renderFerie();
+  if(v==="impostazioni") renderImpostazioni();
+  if(v==="mese") renderMese();
 }
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
 function doLogin(){
-  if(G("pwd").value===PASSWORD){
-    sessionStorage.setItem("turni_auth","1");
+  var pwd=G("pwd").value;
+  var correctPwd=DATA.impostazioni.password||"workmor2024";
+  if(pwd===correctPwd){
+    sessionStorage.setItem("wm_auth","1");
     G("login").classList.add("hidden");
     G("app").classList.add("on");
-    initFB();
-    startListen();
+    G("hdr-attivita").textContent=DATA.impostazioni.nomeAttivita||"La mia attività";
+    setSync("ok");
+    renderMese();
   } else {
     G("lerr").textContent="Password errata.";
     G("pwd").value="";
   }
 }
 G("pwd").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
-if(sessionStorage.getItem("turni_auth")){
+
+// Auto-login se sessione attiva
+if(sessionStorage.getItem("wm_auth")){
   G("login").classList.add("hidden");
   G("app").classList.add("on");
-  initFB();
-  startListen();
+  G("hdr-attivita").textContent=DATA.impostazioni.nomeAttivita||"La mia attività";
+  setSync("ok");
+  renderMese();
 }
 </script>
 </body>
