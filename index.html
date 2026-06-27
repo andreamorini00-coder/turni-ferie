@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Bricolage Grotesque',sans-serif;background:#fafaf8;color:#111827;min-height:100vh}
@@ -286,14 +288,67 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:#fafaf8;color:#1118
 </div>
 
 <script>
-// ── STORAGE ─────────────────────────────────────────────────────────────────
+// ── FIREBASE ─────────────────────────────────────────────────────────────────
+var db = null;
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyDTZFJlCeH6pmwE3tp3qU5dGh7x6XrHe2Q",
+    authDomain: "ordini-fagotti-bd9d8.firebaseapp.com",
+    projectId: "ordini-fagotti-bd9d8",
+    storageBucket: "ordini-fagotti-bd9d8.firebasestorage.app",
+    messagingSenderId: "968063747672",
+    appId: "1:968063747672:web:6c2476600dfeea517cec2d"
+  });
+  db = firebase.firestore();
+} catch(e) { console.warn("Firebase init error:", e); }
+
+// ── STORAGE (localStorage + Firebase sync) ────────────────────────────────────
 var SK = "workmor_turni_pro_v1";
+var FB_DOC = "fagotti_pro"; // documento Firestore
 
 function loadData() {
   try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch(e) { return {}; }
 }
+
 function saveData(d) {
-  try { localStorage.setItem(SK, JSON.stringify(d)); setSync("ok"); } catch(e) { setSync("er"); }
+  // Salva sempre su localStorage (immediato)
+  try { localStorage.setItem(SK, JSON.stringify(d)); } catch(e) {}
+  // Salva anche su Firestore (cloud)
+  if(db) {
+    setSync("lo");
+    db.collection("turni_app").doc(FB_DOC).set(d)
+      .then(function(){ setSync("ok"); })
+      .catch(function(e){ console.warn("Firestore save error:", e); setSync("er"); });
+  } else {
+    setSync("ok");
+  }
+}
+
+function syncFromFirebase(callback) {
+  if(!db) { callback(); return; }
+  setSync("lo");
+  db.collection("turni_app").doc(FB_DOC).get()
+    .then(function(doc) {
+      if(doc.exists) {
+        var remoteData = doc.data();
+        // Usa i dati remoti se più recenti
+        try { localStorage.setItem(SK, JSON.stringify(remoteData)); } catch(e) {}
+        DATA = remoteData;
+        // Assicura strutture minime
+        if(!DATA.impostazioni) DATA.impostazioni = {};
+        if(!DATA.turni) DATA.turni = {};
+        if(!DATA.ferie) DATA.ferie = {};
+        if(!DATA.permessi) DATA.permessi = {};
+        console.log("[Firebase] Dati sincronizzati dal cloud");
+      }
+      setSync("ok");
+      callback();
+    })
+    .catch(function(e) {
+      console.warn("[Firebase] Sync error:", e);
+      setSync("er");
+      callback();
+    });
 }
 
 // ── STATO GLOBALE ────────────────────────────────────────────────────────────
@@ -1086,17 +1141,22 @@ function setVista(v){
   if(v==="mese") renderMese();
 }
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
 function doLogin(){
   var pwd=G("pwd").value;
-  var correctPwd=DATA.impostazioni.password||"workmor2024";
+  var correctPwd=DATA.impostazioni.password||"fagotti2024";
   if(pwd===correctPwd){
     sessionStorage.setItem("wm_auth","1");
     G("login").classList.add("hidden");
     G("app").classList.add("on");
-    G("hdr-attivita").textContent=DATA.impostazioni.nomeAttivita||"La mia attività";
-    setSync("ok");
-    renderMese();
+    setSync("lo");
+    syncFromFirebase(function(){
+      if(!DATA.impostazioni||!DATA.impostazioni.nomeAttivita){
+        DATA.impostazioni=DATA.impostazioni||{};
+        DATA.impostazioni.nomeAttivita="Pasticceria Fagotti";
+      }
+      G("hdr-attivita").textContent=DATA.impostazioni.nomeAttivita||"Pasticceria Fagotti";
+      renderMese();
+    });
   } else {
     G("lerr").textContent="Password errata.";
     G("pwd").value="";
@@ -1108,10 +1168,17 @@ G("pwd").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
 if(sessionStorage.getItem("wm_auth")){
   G("login").classList.add("hidden");
   G("app").classList.add("on");
-  G("hdr-attivita").textContent=DATA.impostazioni.nomeAttivita||"La mia attività";
-  setSync("ok");
-  renderMese();
+  setSync("lo");
+  syncFromFirebase(function(){
+    if(!DATA.impostazioni||!DATA.impostazioni.nomeAttivita){
+      DATA.impostazioni=DATA.impostazioni||{};
+      DATA.impostazioni.nomeAttivita="Pasticceria Fagotti";
+    }
+    G("hdr-attivita").textContent=DATA.impostazioni.nomeAttivita||"Pasticceria Fagotti";
+    renderMese();
+  });
 }
+
 </script>
 </body>
 </html>
